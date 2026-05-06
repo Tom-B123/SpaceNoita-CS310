@@ -81,7 +81,7 @@ int main(){
      * */
 
     char buf[16];
-    cl::Buffer memBuf(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(buf));
+    cl::Buffer memBuf(context, CL_MEM_READ_WRITE, sizeof(buf));
     cl::Kernel kernel(program, "helloWorld", nullptr);
 
     /**
@@ -95,6 +95,8 @@ int main(){
      * */
 
     cl::CommandQueue queue(context, device);
+    buf[0] = 'B';
+    queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
     queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(1), cl::NullRange);
     queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, sizeof(buf), buf);
 
