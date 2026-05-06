@@ -4,6 +4,5 @@
 
  __kernel void helloWorld(__global char* data){
      int index = get_global_id(0);
-     data[index] = data[0];
-     data[256] = '\n';
+     data[index+1] = data[0];
  }
