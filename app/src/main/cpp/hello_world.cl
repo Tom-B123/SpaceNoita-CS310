@@ -3,8 +3,7 @@
  **/
 
  __kernel void helloWorld(__global char* data){
-     for (int i = 1; i < 12; i++) {
-         data[i] = data[i-1];
-     }
-     data[12] = '\n';
+     int index = get_global_id(0);
+     data[index] = data[0];
+     data[256] = '\n';
  }

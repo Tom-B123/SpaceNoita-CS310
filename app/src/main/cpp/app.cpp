@@ -1,13 +1,10 @@
+#include "CL/cl.h"
 #include "CL/opencl.hpp"
 #include <iostream>
 #include <stdlib.h>
 #include<vector>
 #include <fstream>
 #include"app.h"
-
-std::string FallingSandIter1::Greeter::greeting() {
-    return std::string("Hello, Worlddd!");
-}
 
 cl::Device get_default_device(){
     
@@ -80,8 +77,25 @@ int main(){
      * Create buffers and allocate memory on the device.
      * */
 
-    char buf[16];
-    cl::Buffer memBuf(context, CL_MEM_READ_WRITE, sizeof(buf));
+    const int width = 16;
+    const int height = 16;
+
+    // 16x16 world
+    char buf[width * height];
+
+
+    char c = ' ';
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if ( j == 5) c = '@';
+            else c = ' ';
+
+            buf[j * width + i] = c;
+        }
+    }
+    buf[0] = 'T';
+
+    cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(buf),buf);
     cl::Kernel kernel(program, "helloWorld", nullptr);
 
     /**
@@ -95,15 +109,21 @@ int main(){
      * */
 
     cl::CommandQueue queue(context, device);
-    buf[0] = 'B';
-    queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
-    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(1), cl::NullRange);
+
+
+    // NDRange = num of parallel operations
+    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height), cl::NullRange);
     queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, sizeof(buf), buf);
 
     /**
      * Print result.
      * */
 
-    std::cout << buf;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            std::cout << buf[i * width + j];
+        }
+        std::cout << std::endl;
+    }
     return 0;
 }
