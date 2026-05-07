@@ -25,9 +25,9 @@
      y = (y * n_height) + iteration%n_height;
 
      int index1 = y * width + x;
-     int index2 = y * width + x+1;
+     int index2 = y * width + (x+1) % width;
      int index3 = (y+1) * width + x;
-     int index4 = (y+1) * width + x+1;
+     int index4 = (y+1) * width + (x+1) % width;
 
     if (y < height-1) {
         if (data[index1] == '@' && data[index3] != '@') {

@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <stdlib.h>
+#include <thread>
 #include<vector>
 #include <fstream>
 #include<conio.h>
@@ -47,6 +48,28 @@ cl::Device get_default_device(){
     return devices.front();
 }
 
+class FPSCount {
+    private:
+        std::chrono::steady_clock::time_point last_time;
+        double target_fps;
+    public:
+        FPSCount(double n_target_fps) : target_fps(n_target_fps){
+            last_time = std::chrono::steady_clock::now();
+        }
+        void nextFrame() {
+            auto new_time = std::chrono::steady_clock::now();
+            
+            double delta = std::chrono::duration_cast<std::chrono::milliseconds>(new_time - last_time).count();
+            // std::cout << "\033[1;0HFPS: " << std::fixed << std::setprecision(1) << (1000.0/delta) << "     ";
+            std::cout.flush();
+
+            double expected_time = 1000.0 / target_fps;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds((long)(expected_time - delta)));
+            last_time = new_time;
+        }
+};
+
 void print_buf(int width, int height, char* buf) {
     std::cout << "\033[H";
 
@@ -55,23 +78,121 @@ void print_buf(int width, int height, char* buf) {
     
 }
 
-class FPSCount {
-    private:
-        std::chrono::steady_clock::time_point last_time;
-    public:
-        FPSCount() {
-            last_time = std::chrono::steady_clock::now();
-        }
-        void nextFrame() {
-            auto new_time = std::chrono::steady_clock::now();
-            
-            double delta = std::chrono::duration_cast<std::chrono::milliseconds>(new_time - last_time).count();
-            std::cout << "\033[1;0HFPS: " << std::fixed << std::setprecision(1) << (1000.0/delta) << "     ";
-            std::cout.flush();
+void draw(int width, int height, char* data) {
+    print_buf(width,height,data);
+}
 
-            last_time = new_time;
+
+
+/**
+ *  Initialise the data buffer to be empty (" ")
+ *  @param buf the buffer pointer
+ *  @param width the width of the world
+ *  @param height the height of the world
+ */
+char* init_buf(int width, int height) {
+
+    char* buf = new char[width * height]();
+    // draw(width,height,buf);
+
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            buf[i*width + j] = ' ';
         }
-};
+    }
+
+    return buf;
+}
+
+char* init_output_buf(int width, int height) {
+    char* output_buf = new char[(width+3) * (height+2)]();
+
+    char c;
+    for (int i = 0; i < height+2; i++) {
+        for (int j = 0; j < width+3; j++) {
+            c = ' ';
+            if (j == 0 || j == width + 1 ) {c = '|'; }
+            if (i == 0 || i == height + 1) { c = '-'; }
+            if (j == width + 2) {c = '\n'; }
+            output_buf[i*(width+3) + j] = c;
+        }
+    }
+
+    return output_buf;
+}
+
+int main_loop(cl::Program program, cl::Context context, cl::Device device,
+        int width, int height, int n_width, int n_height) {
+    // Fill the buffer of raw data and the output buffer, which has formatting to be displayed.
+    char* buf = init_buf(width,height);
+    char* output_buf = init_output_buf(width,height);
+
+
+    draw(width,height,output_buf);
+
+    // Tracks the simulation framerate
+    FPSCount fps = FPSCount(120);
+
+
+    cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
+    cl::Kernel kernel(program, "helloWorld", nullptr);
+
+    /**
+     * Set kernel argument.
+     * */
+
+
+    int n_spawners = 1;
+    int* spawners;
+    spawners = new int {1};
+
+    int iteration = 0;
+    kernel.setArg(0, memBuf);
+    kernel.setArg(2, width);
+    kernel.setArg(3, height);
+    kernel.setArg(4, n_width);
+    kernel.setArg(5, n_height);
+    // kernel.setArg(6, n_spawners);
+    // kernel.setArg(7, spawners);
+
+    /**
+     * Run the kernel function and collect its result.
+     * */
+
+    cl::CommandQueue queue(context, device);
+    cl::Event completeEvent;
+
+    while (1) {
+        // buf[4] = '@';
+        // queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
+        for (int i = 0; i < 5; i++) {
+            kernel.setArg(1, iteration);
+            // NDRange = num of parallel operations
+            queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange,nullptr,&completeEvent);
+            completeEvent.wait();
+
+            iteration++;
+        }
+
+        queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, width * height * sizeof(buf[0]), buf);
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
+            }
+        }
+
+        print_buf(width,height,output_buf);
+
+        fps.nextFrame();
+
+    }
+
+    delete[](buf);
+    delete[](output_buf);
+
+    return 0;
+}
 
 int main(){
 
@@ -108,97 +229,10 @@ int main(){
      * Create buffers and allocate memory on the device.
      * */
 
-    const int width = 700;
+    const int width = 32;
     const int n_width = 2;
-    const int height = 212;
+    const int height = 10;
     const int n_height = 2;
-
-    FPSCount fps = FPSCount();
-
-    // nxn world
-    char* buf = new char[width * height]();
-    char* output_buf = new char[(width+3) * (height+2)]();
-
-    for (int i = 0; i < width + 2; i++) {
-        output_buf[i] = '-';
-        output_buf[(width+3) * (height+1) + i] = '-';
-    }
-
-    for (int i = 0; i < height + 2; i++) {
-        output_buf[(width + 3) * i + width + 2] = '\n';
-        
-        if (i == 0 || i == height + 1) continue;
-        
-        output_buf[(width + 3) * i] = '|';
-        output_buf[(width + 3) * i + width + 1] = '|';
-    }
-
-    output_buf[(width+3) * (height+2) - 1] = '\0';
-
-
-
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            buf[i*width + j] = ' ';
-            output_buf[(i+1)*(width+3) + (j+1)] = ' ';
-        }
-    }
-
-    cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
-    cl::Kernel kernel(program, "helloWorld", nullptr);
-
-    /**
-     * Set kernel argument.
-     * */
-
-
-    int n_spawners = 1;
-    int* spawners;
-    spawners = new int {1};
-
-    int iteration = 0;
-    kernel.setArg(0, memBuf);
-    kernel.setArg(2, width);
-    kernel.setArg(3, height);
-    kernel.setArg(4, n_width);
-    kernel.setArg(5, n_height);
-    // kernel.setArg(6, n_spawners);
-    // kernel.setArg(7, spawners);
-
-    /**
-     * Run the kernel function and collect its result.
-     * */
-
-    cl::CommandQueue queue(context, device);
-    cl::Event completeEvent;
-
-    while (1) {
-        // buf[4] = '@';
-        // queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
-        for (int i = 0; i < 100; i++) {
-            kernel.setArg(1, iteration);
-            // NDRange = num of parallel operations
-            queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange,nullptr,&completeEvent);
-            completeEvent.wait();
-
-            iteration++;
-        }
-
-
-        queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, width * height * sizeof(buf[0]), buf);
-
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
-            }
-        }
-
-
-        print_buf(width,height,output_buf);
-
-        fps.nextFrame();
-
-    }
-
-    return 0;
+    
+    return main_loop(program,context,device,width,height,n_width,n_height);
 }
