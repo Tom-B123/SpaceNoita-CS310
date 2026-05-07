@@ -45,7 +45,7 @@ cl::Device get_default_device(){
 void print_buf(int width, int height, char* buf) {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            std::cout << buf[i * width + j + 1];
+            std::cout << buf[i * width + j];
         }
         std::cout << std::endl;
     }
@@ -87,11 +87,12 @@ int main(){
      * */
 
     const int width = 16;
+    const int n_width = 2;
     const int height = 16;
+    const int n_height = 2;
 
     // 16x16 world
-    char buf[width * height + 1] = {'-'};
-    buf[0] = 'A';
+    char buf[width * height] = {'-'};
 
     cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(buf),buf);
     cl::Kernel kernel(program, "helloWorld", nullptr);
@@ -100,7 +101,12 @@ int main(){
      * Set kernel argument.
      * */
 
+    char iteration = 'A';
     kernel.setArg(0, memBuf);
+    kernel.setArg(2, width);
+    kernel.setArg(3, height);
+    kernel.setArg(4, n_width);
+    kernel.setArg(5, n_height);
 
     /**
      * Run the kernel function and collect its result.
@@ -109,15 +115,13 @@ int main(){
     cl::CommandQueue queue(context, device);
 
     for (int i = 0; i < 10; i++) {
+        kernel.setArg(1, iteration);
         // NDRange = num of parallel operations
-        queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height), cl::NullRange);
+        queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange);
         queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, sizeof(buf), buf);
-
-
-        buf[0]++;
         print_buf(width,height,buf);
 
-        queue.enqueueWriteBuffer(memBuf, CL_TRUE, 0, sizeof(char), &buf[0]);
+        iteration++;
     }
 
     /**
