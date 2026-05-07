@@ -6,21 +6,6 @@
         int width, int height, int n_width, int n_height){
      int index = get_global_id(0);
     
-     /* if (iteration % 2 == 0) { */
-     /**/
-     /*     if (index == (width / 2)) { //(iteration/10) % (width*n_width)) { */
-     /*         data[index] = 'S'; */
-     /*         return; */
-     /*     } */
-     /* } */
-
-     /* for (int i = 0; i < n_spawners; i++) { */
-     /*     if (index == spawners[i]) { */
-     /*         data[index] = '@'; */
-     /*         return; */
-     /*     } */
-     /* } */
-
      int x = index % ((width + 1)/n_width);
      int y = index / ((width + 1)/n_height);
 
@@ -43,12 +28,16 @@
              data[index2] = data[index4];
              data[index4] = tmp;
          }
-         if (x < width - 1 && x > 0) {
+         // If index2 has wrapped around, don't make this move
+         if (index1 < index2) {
              if (data[index1] == 'S' && data[index3] == 'S'&& data[index4] != '@') {
                  char tmp = data[index1];
                  data[index1] = data[index4];
                  data[index4] = tmp;
              }
+         }
+         // If index1 has wrapped around, don't make this move
+         if (index2 > index1) {
              if (data[index2] == 'S' && data[index4] == 'S'&& data[index3] != '@') {
                  char tmp = data[index3];
                  data[index3] = data[index2];

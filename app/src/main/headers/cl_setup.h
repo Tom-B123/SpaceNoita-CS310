@@ -143,6 +143,10 @@ class CL {
             commandQueue.enqueueReadBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
             taskFinished.wait();
         }
+        void enqueueWriteBuffer(int task_width, int task_height,char* buffer) {
+            commandQueue.enqueueWriteBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
+            taskFinished.wait();
+        }
 };
 
 #endif

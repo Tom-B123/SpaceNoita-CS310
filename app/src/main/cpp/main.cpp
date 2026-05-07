@@ -26,6 +26,10 @@ int main_loop(CL cl_components,
     cl_components.setArg(5, n_height);
 
 
+    buf[1] = 'S';
+    buf[4] = 'S';
+
+    cl_components.enqueueWriteBuffer(width, height, buf);
     // Create the queue for queueing GPU tasks
 
     // Main loop, 

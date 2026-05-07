@@ -221,6 +221,7 @@ bool test_two_particles_falling_multiple() {
 }
 
 bool is_expected(int width, int height, char* initial_state, char* expected_state, int number_of_steps) {
+
     const int n_width = 2;
     const int n_height = 2;
     
@@ -241,8 +242,10 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     
     update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf, output_buf);
     
+    std::cout << std::endl;     
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
+            std::cout << x << "," << y << ": got [" << buf[y*width + x] << "] , expected [" << expected_state[y * width + x] << "]" << std::endl;
             TEST_ASSERT(buf[y * width + x] == expected_state[y * width + x], "Difference between calculated and expected states");
         }
     }
@@ -278,8 +281,8 @@ bool is_expected_iterative(int width, int height, char* initial_state, char* exp
     
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            // UPDATE C++ VERSION TO USE NICE FORMATTING!!!!!!!
-            // TEST_ASSERT(buf[y * width + x] == expected_state[y * width + x], std::format("Difference between calculated and expected states at {} {} ",x,y));
+            std::cout << x << "," << y << buf[y*width + x] << " : " << expected_state[y * width + x] << std::endl;
+            TEST_ASSERT(buf[y * width + x] == expected_state[y * width + x], "Difference between calculated and expected states");
         }
     }
     
@@ -304,19 +307,7 @@ bool test_bottom_boundary_one_sand() {
 
 // Tests if sand will fall to right
 bool test_bottom_boundary_two_sand() {
-    std::cout << "C++ version: ";
     
-    if (__cplusplus == 202101L) std::cout << "C++23";
-    else if (__cplusplus == 202002L) std::cout << "C++20";
-    else if (__cplusplus == 201703L) std::cout << "C++17";
-    else if (__cplusplus == 201402L) std::cout << "C++14";
-    else if (__cplusplus == 201103L) std::cout << "C++11";
-    else if (__cplusplus == 199711L) std::cout << "C++98";
-    else std::cout << "Pre-standard C++";
-    
-    std::cout << " (__cplusplus = " << __cplusplus << ")" << std::endl;
-    
-    return 0;
     char* initial = new char[]{
         'S',' ',
         'S',' '
@@ -325,7 +316,7 @@ bool test_bottom_boundary_two_sand() {
         ' ',' ',
         'S','S'
     };
-    return is_expected(2,2,initial,expected,1);
+    return is_expected(2,2,initial,expected,5);
 }
 
 // Main test runner
