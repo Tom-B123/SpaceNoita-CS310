@@ -1,5 +1,6 @@
 #include "CL/cl.h"
 #include "CL/opencl.hpp"
+#include "GLFW/glfw3.h"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -121,6 +122,30 @@ char* init_output_buf(int width, int height) {
     return output_buf;
 }
 
+void update(cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
+        int* iteration, int update_count, int width, int height, int n_width, int n_height,
+        char* buf, char* output_buf) {
+    
+    cl::Event completeEvent;
+
+    for (int i = 0; i < 5; i++) {
+        kernel.setArg(1, *iteration);
+        // NDRange = num of parallel operations
+        queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange,nullptr,&completeEvent);
+        completeEvent.wait();
+
+        *iteration = (*iteration) + 1;
+    }
+
+    queue.enqueueReadBuffer(mem_buf, CL_TRUE, 0, width * height * sizeof(buf[0]), buf);
+
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
+        }
+    }
+}
+
 int main_loop(cl::Program program, cl::Context context, cl::Device device,
         int width, int height, int n_width, int n_height) {
     // Fill the buffer of raw data and the output buffer, which has formatting to be displayed.
@@ -128,13 +153,13 @@ int main_loop(cl::Program program, cl::Context context, cl::Device device,
     char* output_buf = init_output_buf(width,height);
 
 
-    draw(width,height,output_buf);
-
     // Tracks the simulation framerate
     FPSCount fps = FPSCount(120);
 
 
-    cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
+    // Create the memory buffer that will store world data. Potentially use more buffers to store larger world in chunks
+    cl::Buffer mem_buf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
+    // Create the kernel program using the program "helloWorld"
     cl::Kernel kernel(program, "helloWorld", nullptr);
 
     /**
@@ -142,50 +167,30 @@ int main_loop(cl::Program program, cl::Context context, cl::Device device,
      * */
 
 
-    int n_spawners = 1;
-    int* spawners;
-    spawners = new int {1};
+    // Update n times per tick
+    int update_count = 5;
 
     int iteration = 0;
-    kernel.setArg(0, memBuf);
+
+    // Send data to the GPU.
+    kernel.setArg(0, mem_buf);
     kernel.setArg(2, width);
     kernel.setArg(3, height);
     kernel.setArg(4, n_width);
     kernel.setArg(5, n_height);
-    // kernel.setArg(6, n_spawners);
-    // kernel.setArg(7, spawners);
 
-    /**
-     * Run the kernel function and collect its result.
-     * */
 
+    // Create the queue for queueing GPU tasks
     cl::CommandQueue queue(context, device);
-    cl::Event completeEvent;
 
+    // Main loop, 
     while (1) {
-        // buf[4] = '@';
-        // queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
-        for (int i = 0; i < 5; i++) {
-            kernel.setArg(1, iteration);
-            // NDRange = num of parallel operations
-            queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange,nullptr,&completeEvent);
-            completeEvent.wait();
 
-            iteration++;
-        }
+        update(kernel,queue,mem_buf, &iteration, update_count, width, height, n_width, n_height, buf, output_buf);
 
-        queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, width * height * sizeof(buf[0]), buf);
-
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
-            }
-        }
-
-        print_buf(width,height,output_buf);
+        draw(width,height,output_buf);
 
         fps.nextFrame();
-
     }
 
     delete[](buf);
@@ -195,6 +200,24 @@ int main_loop(cl::Program program, cl::Context context, cl::Device device,
 }
 
 int main(){
+
+
+    GLFWwindow* window;
+
+    /* Initialize the library */
+    if (!glfwInit())
+        return -1;
+
+    /* Create a windowed mode window and its OpenGL context */
+    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    if (!window)
+    {
+        glfwTerminate();
+        return -1;
+    }
+
+    /* Make the window's context current */
+    glfwMakeContextCurrent(window);
 
     /**
      * Select a device.
@@ -234,5 +257,9 @@ int main(){
     const int height = 10;
     const int n_height = 2;
     
-    return main_loop(program,context,device,width,height,n_width,n_height);
+    int error = main_loop(program,context,device,width,height,n_width,n_height);
+
+    glfwTerminate();
+
+    return error;
 }

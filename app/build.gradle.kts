@@ -27,15 +27,32 @@ application {
 tasks.withType(CppCompile::class).configureEach {
     // Add your OpenCL include path
     compilerArgs.add("-IC:/Users/tomhb/University/OpenCL/OpenCL-SDK/install/include")
-    // Or if you have include/CL structure:
-    // compilerArgs.add("-IC:/path/to/your/opencl")
+    compilerArgs.add("-IC:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers/include")
+
 }
 
 tasks.withType(LinkExecutable::class).configureEach {
     // Add your OpenCL library path and library
-    val openclLibPath = "C:/Users/tomhb/University/OpenCL/OpenCL-SDK/install/lib/OpenCL.lib"  // For Windows .lib file
-    // OR for the .dll:
-    // linkerArgs.add("C:/path/to/your/opencl/bin/OpenCL.dll")
     
-    linkerArgs.add(openclLibPath)
+    linkerArgs.add("C:/Users/tomhb/University/OpenCL/OpenCL-SDK/install/lib/OpenCL.lib")
+    linkerArgs.add("C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers/lib/glfw3.lib")
+
+    // Add required Windows system libraries for GLFW
+    linkerArgs.add("user32.lib")     // Windows API functions
+    linkerArgs.add("gdi32.lib")      // Graphics device interface
+    linkerArgs.add("shell32.lib")    // Shell API
+    linkerArgs.add("ole32.lib")      // OLE/com libraries
+    
+    // For GLFW's Win32 platform layer
+    linkerArgs.add("winmm.lib")      // Multimedia (joystick, timers)
+    linkerArgs.add("ws2_32.lib")     // Windows sockets
+    
+    // C runtime and standard libraries
+    linkerArgs.add("msvcrt.lib")     // C runtime library
+    linkerArgs.add("ucrt.lib")       // Universal CRT
+    linkerArgs.add("vcruntime.lib")  // Visual C++ runtime
+    
+    // Additional libraries that might be needed
+    linkerArgs.add("opengl32.lib")   // OpenGL (if using OpenGL context)
+    linkerArgs.add("advapi32.lib")   // Advanced Windows API
 }
