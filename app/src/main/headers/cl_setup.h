@@ -42,6 +42,8 @@ class CL {
          *  Initialise OpenCL: 
          */
         CL(char* buf,int width, int height) {
+            if (width%2 == 1) width++;
+            if (height%2 == 1) height++;
             /**
              * Search for all the OpenCL platforms available and check
              * if there are any.

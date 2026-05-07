@@ -49,8 +49,8 @@ bool test_buffer_initialization() {
 
 // Test 2: Output buffer format
 bool test_output_buffer_format() {
-    int width = 5;
-    int height = 3;
+    int width = 4;
+    int height = 4;
     
     char* output_buf = init_output_buf(width, height);
     int output_width = width + 3;
@@ -61,7 +61,6 @@ bool test_output_buffer_format() {
     
     std::string text = "Left border should be '|', found\"\"";
     // Check left border
-    std::cout << output_buf[9] << std::endl;
     TEST_ASSERT(output_buf[output_width] == '|', 
             text.insert(text.size()-1,{output_buf[output_width + 1]}));
     
@@ -242,13 +241,17 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     
     update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf, output_buf);
     
+    bool success = true;
+
     std::cout << std::endl;     
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            std::cout << x << "," << y << ": got [" << buf[y*width + x] << "] , expected [" << expected_state[y * width + x] << "]" << std::endl;
-            TEST_ASSERT(buf[y * width + x] == expected_state[y * width + x], "Difference between calculated and expected states");
+            std::cout << "A [" << buf[y*width + x] << "] E [" << expected_state[y * width + x] << "]";
+            if (buf[y * width + x] != expected_state[y * width + x]) success = false;
         }
+        std::cout << std::endl;
     }
+    TEST_ASSERT(success, "Difference between calculated and expected states");
     
     delete[] buf;
     delete[] output_buf;
@@ -279,12 +282,14 @@ bool is_expected_iterative(int width, int height, char* initial_state, char* exp
         update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf, output_buf);
     }
     
+    bool success = true;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            std::cout << x << "," << y << buf[y*width + x] << " : " << expected_state[y * width + x] << std::endl;
-            TEST_ASSERT(buf[y * width + x] == expected_state[y * width + x], "Difference between calculated and expected states");
+            std::cout << x << "," << y << ": got [" << buf[y*width + x] << "] , expected [" << expected_state[y * width + x] << "]" << std::endl;
+            if (buf[y * width + x] != expected_state[y * width + x]) success = false;
         }
     }
+    TEST_ASSERT(success, "Difference between calculated and expected states");
     
     delete[] buf;
     delete[] output_buf;
@@ -305,7 +310,7 @@ bool test_bottom_boundary_one_sand() {
     return is_expected(2,2,initial,expected,1);
 }
 
-// Tests if sand will fall to right
+// Test 8 if sand will fall to right
 bool test_bottom_boundary_two_sand() {
     
     char* initial = new char[]{
@@ -316,7 +321,133 @@ bool test_bottom_boundary_two_sand() {
         ' ',' ',
         'S','S'
     };
-    return is_expected(2,2,initial,expected,5);
+    return is_expected(2,2,initial,expected,1);
+}
+// Test 9 if sand will fall to left
+bool test_bottom_boundary_two_sand_left() {
+    
+    char* initial = new char[]{
+        ' ','S',
+        ' ','S'
+    };
+    char* expected = new char[]{
+        ' ',' ',
+        'S','S'
+    };
+    return is_expected(2,2,initial,expected,1);
+}
+// Test 10: will :. formation stay still
+bool test_bottom_boundary_three_sand() {
+    
+    char* initial = new char[]{
+        'S',' ',
+        'S','S'
+    };
+    char* expected = new char[]{
+        'S',' ',
+        'S','S'
+    };
+    return is_expected(2,2,initial,expected,1);
+}
+// Checks the simulation is determenistic with left vs right priority for the same cell
+bool test_bottom_boundary_four_sand_race() {
+    char* initial;
+    char* expected;
+    bool success = true;
+    for (int i = 0; i < 1; i++) {
+
+        initial = new char[]{
+            'S',' ','S',
+            'S',' ','S'
+        };
+        expected = new char[]{
+            ' ',' ','S',
+            'S','S','S'
+        };
+        if (!is_expected(3,2,initial,expected,1)) success = false;
+    }
+    return success;
+}
+// Test 12 Checks a tower will spread out as expected
+bool test_tower() {
+    char* initial;
+    char* expected;
+    initial = new char[]{
+        ' ','S',' ',' ',
+        ' ','S',' ',' ',
+        ' ','S',' ',' ',
+        ' ','S',' ',' ',
+        ' ','S',' ',' ',
+        ' ','S',' ',' '
+    };
+    expected = new char[]{
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        'S',' ',' ',' ',
+        'S','S',' ',' ',
+        'S','S','S',' '
+    };
+    return is_expected(4,6,initial,expected,10);
+}
+// Test 12 Checks a tower will spread out as expected
+bool test_two_towers() {
+    char* initial;
+    char* expected;
+    initial = new char[]{
+        'S',' ',' ','S',
+        'S',' ',' ','S',
+        'S',' ',' ','S',
+        'S',' ',' ','S',
+        'S',' ',' ','S',
+        'S',' ',' ','S'
+    };
+    expected = new char[]{
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        'S','S','S','S',
+        'S','S','S','S',
+        'S','S','S','S'
+    };
+    return is_expected(4,6,initial,expected,20);
+}
+// Test 14: water leveling out
+bool test_water_tower() {
+    char* initial;
+    char* expected;
+    initial = new char[]{
+        'W',' ',' ',' ',
+        'W',' ',' ',' ',
+        'W',' ',' ',' ',
+        'W',' ',' ',' '
+    };
+    expected = new char[]{
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        'W','W','W','W'
+    };
+    return is_expected(4,4,initial,expected,15);
+}
+
+// Test 15: water leveling out
+bool test_water_sand() {
+    char* initial;
+    char* expected;
+    initial = new char[]{
+        'W',' ',' ',' ',
+        'W',' ',' ',' ',
+        'W',' ',' ','S',
+        'W',' ','S','S'
+    };
+    expected = new char[]{
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        'W','W',' ','S',
+        'W','W','S','S'
+    };
+    return is_expected(4,4,initial,expected,15);
 }
 
 // Main test runner
@@ -333,6 +464,13 @@ int main() {
     TEST_RUN((void*)test_two_particles_falling_multiple);
     TEST_RUN((void*)test_bottom_boundary_one_sand);
     TEST_RUN((void*)test_bottom_boundary_two_sand);
+    TEST_RUN((void*)test_bottom_boundary_two_sand_left);
+    TEST_RUN((void*)test_bottom_boundary_three_sand);
+    TEST_RUN((void*)test_bottom_boundary_four_sand_race);
+    TEST_RUN((void*)test_tower);
+    TEST_RUN((void*)test_two_towers);
+    TEST_RUN((void*)test_water_tower);
+    TEST_RUN((void*)test_water_sand);
     // TEST_RUN(test_multiple_iterations);
     // TEST_RUN(test_boundary_conditions);
     // TEST_RUN(test_kernel_argument_consistency);

@@ -10,6 +10,8 @@
  *  @param height the height of the world
  */
 char* init_buf(int width, int height) {
+    if (width % 2 == 1) width++;
+    if (height % 2 == 1) height++;
 
     char* buf = new char[width * height]();
     // draw(width,height,buf);
@@ -24,6 +26,9 @@ char* init_buf(int width, int height) {
 }
 
 char* init_output_buf(int width, int height) {
+    if (width % 2 == 1) width++;
+    if (height % 2 == 1) height++;
+
     char* output_buf = new char[(width+3) * (height+2)]();
 
     char c;
@@ -42,7 +47,9 @@ char* init_output_buf(int width, int height) {
 void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
         int* iteration, int update_count, int width, int height, int n_width, int n_height,
         char* buf, char* output_buf) {
-    
+
+    if (width % 2 == 1) width++;
+    if (height % 2 == 1) height++;
 
     for (int i = 0; i < update_count; i++) {
         cl_components->setArg(1,*iteration);
@@ -59,5 +66,4 @@ void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::
             output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
         }
     }
-
 }

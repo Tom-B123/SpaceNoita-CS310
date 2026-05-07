@@ -16,8 +16,8 @@
 #include <Windows.h>
 #include <string>
 
-const int WORLD_WIDTH = 3;
-const int WORLD_HEIGHT = 2;
+const int WORLD_WIDTH = 6;
+const int WORLD_HEIGHT = 8;
 const int WINDOW_WIDTH = 60;
 const int WINDOW_HEIGHT = 40;
 const int CELL_WIDTH = 2;
