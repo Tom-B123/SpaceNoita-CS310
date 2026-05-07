@@ -5,14 +5,14 @@
  __kernel void helloWorld(__global char* data,int iteration, 
         int width, int height, int n_width, int n_height){
      int index = get_global_id(0);
-
-     if (iteration % 2 == 0) {
-
-         if (index == (width / 2)) { //(iteration/10) % (width*n_width)) {
-             data[index] = 'S';
-             return;
-         }
-     }
+    
+     /* if (iteration % 2 == 0) { */
+     /**/
+     /*     if (index == (width / 2)) { //(iteration/10) % (width*n_width)) { */
+     /*         data[index] = 'S'; */
+     /*         return; */
+     /*     } */
+     /* } */
 
      /* for (int i = 0; i < n_spawners; i++) { */
      /*     if (index == spawners[i]) { */

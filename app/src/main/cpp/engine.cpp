@@ -60,5 +60,4 @@ void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::
         }
     }
 
-    draw(width,height,output_buf);
 }

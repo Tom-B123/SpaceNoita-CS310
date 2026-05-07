@@ -34,6 +34,7 @@ int main_loop(CL cl_components,
         update(&cl_components, &iteration, update_count, width, height, n_width, n_height,
                 buf,output_buf);
 
+        draw(width,height,output_buf);
         // draw(width,height,output_buf);
 
         fps.nextFrame();
@@ -51,7 +52,7 @@ int main(){
     char* buf = init_buf(WORLD_WIDTH, WORLD_HEIGHT);
     char* output_buf = init_output_buf(WORLD_WIDTH, WORLD_HEIGHT);
 
-    CL cl_components(buf);
+    CL cl_components(buf,WORLD_WIDTH,WORLD_HEIGHT);
     
     int error = main_loop(cl_components,WORLD_WIDTH,WORLD_HEIGHT,2,2,
             buf,output_buf);

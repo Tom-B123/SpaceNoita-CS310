@@ -14,11 +14,34 @@ class CL {
         cl::Event taskFinished;
         cl::Context context;
         cl::Program program;
+
+        std::string find_kernel_file() {
+            std::vector<std::string> search_paths = {
+                "app/src/main/cpp/hello_world.cl",
+                "../app/src/main/cpp/hello_world.cl",
+                "../../app/src/main/cpp/hello_world.cl",
+                "../../../app/src/main/cpp/hello_world.cl",
+                "src/main/cpp/hello_world.cl",
+                "../src/main/cpp/hello_world.cl",
+                "hello_world.cl",
+                "./hello_world.cl"
+            };
+
+            for (const auto& path : search_paths) {
+                std::ifstream test(path);
+                if (test.is_open()) {
+                    test.close();
+                    return path;
+                }
+            }
+
+            return "C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/cpp/hello_world.cl";
+        }
     public:
         /**
          *  Initialise OpenCL: 
          */
-        CL(char* buf) {
+        CL(char* buf,int width, int height) {
             /**
              * Search for all the OpenCL platforms available and check
              * if there are any.
@@ -50,7 +73,7 @@ class CL {
 
             device = devices.front();
             
-            std::ifstream hello_world_file("app/src/main/cpp/hello_world.cl");
+            std::ifstream hello_world_file(find_kernel_file());
             std::string src(std::istreambuf_iterator<char>(hello_world_file), (std::istreambuf_iterator<char>()));
 
             /**
@@ -77,25 +100,48 @@ class CL {
             cl::CommandQueue n_queue(context,device);
             commandQueue = n_queue;
 
-            cl::Buffer n_mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, WORLD_WIDTH * WORLD_HEIGHT * sizeof(buf[0]),buf);
+            cl::Buffer n_mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
             mem_buffer = n_mem_buffer;
-                
-            cl::Kernel n_kernel(program, "helloWorld", nullptr);
-            kernel = n_kernel;
+
+            // Verify kernel exists
+
+            kernel = cl::Kernel(program, "helloWorld", &err);
+            if (err != CL_SUCCESS) {
+                std::cerr << "Failed to create kernel 'helloWorld'! Error: " << err << std::endl;
+
+                // List available kernels for debugging
+                std::vector<cl::Kernel> kernels;
+                program.createKernels(&kernels);
+                std::cout << "Available kernels in program: " << kernels.size() << std::endl;
+                for (auto& k : kernels) {
+                    std::cout << "  - " << k.getInfo<CL_KERNEL_FUNCTION_NAME>() << std::endl;
+                }
+                exit(1);
+            }
+            cl::Event n_task_finished;
+            taskFinished = n_task_finished;
 
         }
         void setBufferArg(int arg_n) {
-            kernel.setArg(arg_n, mem_buffer);
+            cl_int err = kernel.setArg(arg_n, mem_buffer);
+            if (err != CL_SUCCESS) {
+                std::cout << "Failed to set kernel argument " << "mem buffer" << err << std::endl;
+            }
         }
         void setArg(int arg_n, int value) {
-            kernel.setArg(arg_n,value);
+            cl_int err = kernel.setArg(arg_n, value);
+            if (err != CL_SUCCESS) {
+                std::cout << "Failed to set kernel argument " << arg_n << err << std::endl;
+            }
         }
         void enqueueNDRangeKernel(int task_width, int task_height) {
-            commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&taskFinished);
+
+            cl_int err = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&taskFinished);
             taskFinished.wait();
         }
         void enqueueReadBuffer(int task_width, int task_height,char* buffer) {
-            commandQueue.enqueueReadBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer);
+            commandQueue.enqueueReadBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
+            taskFinished.wait();
         }
 };
 
