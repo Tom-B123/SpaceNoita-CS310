@@ -59,8 +59,10 @@ class CL {
             cl::Program::Sources sources;
             sources.push_back({src.c_str(), src.length() + 1});
 
+            // Create the context and program
             cl::Context n_context(device);
             context = n_context;
+
             cl::Program n_program(context, sources);
             program = n_program;
 
@@ -70,6 +72,8 @@ class CL {
                     << "Build Log:\t " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << std::endl;
                 exit(1);
             }
+
+            // Create the queue, input / output buffer and kernel
             cl::CommandQueue n_queue(context,device);
             commandQueue = n_queue;
 

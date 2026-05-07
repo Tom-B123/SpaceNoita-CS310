@@ -6,10 +6,13 @@
         int width, int height, int n_width, int n_height){
      int index = get_global_id(0);
 
-    if (index == (iteration/10) % (width*n_width)) {
-        data[index] = '@';
-        return;
-    }
+     if (iteration % 2 == 0) {
+
+         if (index == (width / 2)) { //(iteration/10) % (width*n_width)) {
+             data[index] = 'S';
+             return;
+         }
+     }
 
      /* for (int i = 0; i < n_spawners; i++) { */
      /*     if (index == spawners[i]) { */
@@ -29,28 +32,28 @@
      int index3 = (y+1) * width + x;
      int index4 = (y+1) * width + (x+1) % width;
 
-    if (y < height-1) {
-        if (data[index1] == '@' && data[index3] != '@') {
-            char tmp = data[index1];
-            data[index1] = data[index3];
-            data[index3] = tmp;
-        }
-        if (data[index2] == '@' && data[index4] != '@') {
-            char tmp = data[index2];
-            data[index2] = data[index4];
-            data[index4] = tmp;
-        }
-        if (x < width - 1 && x > 0) {
-            if (data[index1] == '@' && data[index3] == '@'&& data[index4] != '@') {
-                char tmp = data[index1];
-                data[index1] = data[index4];
-                data[index4] = tmp;
-            }
-            if (data[index2] == '@' && data[index4] == '@'&& data[index3] != '@') {
-                char tmp = data[index3];
-                data[index3] = data[index2];
-                data[index2] = tmp;
-            }
-        }
-    }
+     if (y < height-1) {
+         if (data[index1] == 'S' && data[index3] != 'S') {
+             char tmp = data[index1];
+             data[index1] = data[index3];
+             data[index3] = tmp;
+         }
+         if (data[index2] == 'S' && data[index4] != 'S') {
+             char tmp = data[index2];
+             data[index2] = data[index4];
+             data[index4] = tmp;
+         }
+         if (x < width - 1 && x > 0) {
+             if (data[index1] == 'S' && data[index3] == 'S'&& data[index4] != '@') {
+                 char tmp = data[index1];
+                 data[index1] = data[index4];
+                 data[index4] = tmp;
+             }
+             if (data[index2] == 'S' && data[index4] == 'S'&& data[index3] != '@') {
+                 char tmp = data[index3];
+                 data[index3] = data[index2];
+                 data[index2] = tmp;
+             }
+         }
+     }
  }

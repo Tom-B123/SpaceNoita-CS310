@@ -51,7 +51,6 @@ void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::
 
         *iteration = (*iteration) + 1;
     }
-    buf[5] = '@';
     // std::cout << "Before: " << buf << std::endl;
     cl_components->enqueueReadBuffer(width, height,buf);
     // std::cout << "After: " << buf << std::endl;
