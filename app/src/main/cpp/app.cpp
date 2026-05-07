@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include<vector>
 #include <fstream>
+#include<conio.h>
 #include"app.h"
 
 cl::Device get_default_device(){
@@ -43,12 +44,23 @@ cl::Device get_default_device(){
 }
 
 void print_buf(int width, int height, char* buf) {
+    system("cls");
+    for (int j = 0; j < width + 2; j++) {
+        std::cout << "-";
+    }
+    std::cout << std::endl;
     for (int i = 0; i < height; i++) {
+        std::cout << "|";
         for (int j = 0; j < width; j++) {
             std::cout << buf[i * width + j];
         }
-        std::cout << std::endl;
+        std::cout << "|" << std::endl;
     }
+    for (int j = 0; j < width + 2; j++) {
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    
 }
 
 int main(){
@@ -92,7 +104,15 @@ int main(){
     const int n_height = 2;
 
     // 16x16 world
-    char buf[width * height] = {'-'};
+    char buf[width * height] = {};
+
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            buf[i*width + j] = ' ';
+        }
+    }
+    buf[5] = '@';
+    buf[7] = '@';
 
     cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(buf),buf);
     cl::Kernel kernel(program, "helloWorld", nullptr);
@@ -114,19 +134,20 @@ int main(){
 
     cl::CommandQueue queue(context, device);
 
-    for (int i = 0; i < 10; i++) {
-        kernel.setArg(1, iteration);
-        // NDRange = num of parallel operations
-        queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange);
+    while (1) {
+        buf[4] = '@';
+        queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
+        for (int i = 0; i < 1; i++) {
+            kernel.setArg(1, iteration);
+            // NDRange = num of parallel operations
+            queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange);
+
+            iteration++;
+        }
+
         queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, sizeof(buf), buf);
         print_buf(width,height,buf);
-
-        iteration++;
     }
-
-    /**
-     * Print result.
-     * */
 
     return 0;
 }

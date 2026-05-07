@@ -9,12 +9,24 @@
      int x = index % ((width + 1)/n_width);
      int y = index / ((height + 1)/n_height);
 
-     x = (x * n_width);
-     y = (y * n_height);
+     x = (x * n_width) + iteration%2;
+     y = (y * n_height) + iteration%2;
 
-     index = y * width + x;
-     data[index] = iteration + x + y;
-     data[index+1] = iteration + x + y;
-     data[index+width] = iteration + x + y;
-     data[index+width+1] = iteration + x + y;
+     int index1 = y * width + x;
+     int index2 = y * width + x+1;
+     int index3 = (y+1) * width + x;
+     int index4 = (y+1) * width + x+1;
+
+    if (y < height-1) {
+        if (data[index1] == '@' && data[index3] != '@') {
+            char tmp = data[index1];
+            data[index1] = data[index3];
+            data[index3] = tmp;
+        }
+        if (data[index2] == '@' && data[index4] != '@') {
+            char tmp = data[index2];
+            data[index2] = data[index4];
+            data[index4] = tmp;
+        }
+    }
  }
