@@ -5,6 +5,8 @@
 #include<vector>
 #include <fstream>
 #include<conio.h>
+#include <stdio.h>
+#include <Windows.h>
 #include"app.h"
 
 cl::Device get_default_device(){
@@ -44,7 +46,7 @@ cl::Device get_default_device(){
 }
 
 void print_buf(int width, int height, char* buf) {
-    system("cls");
+    std::cout << "\033[H";
     for (int j = 0; j < width + 2; j++) {
         std::cout << "-";
     }
@@ -98,9 +100,9 @@ int main(){
      * Create buffers and allocate memory on the device.
      * */
 
-    const int width = 16;
+    const int width = 256;
     const int n_width = 2;
-    const int height = 16;
+    const int height = 128;
     const int n_height = 2;
 
     // 16x16 world
@@ -111,8 +113,6 @@ int main(){
             buf[i*width + j] = ' ';
         }
     }
-    buf[5] = '@';
-    buf[7] = '@';
 
     cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(buf),buf);
     cl::Kernel kernel(program, "helloWorld", nullptr);
@@ -121,12 +121,19 @@ int main(){
      * Set kernel argument.
      * */
 
+
+    int n_spawners = 1;
+    int* spawners;
+    spawners = new int {1};
+
     char iteration = 'A';
     kernel.setArg(0, memBuf);
     kernel.setArg(2, width);
     kernel.setArg(3, height);
     kernel.setArg(4, n_width);
     kernel.setArg(5, n_height);
+    // kernel.setArg(6, n_spawners);
+    // kernel.setArg(7, spawners);
 
     /**
      * Run the kernel function and collect its result.
@@ -135,9 +142,9 @@ int main(){
     cl::CommandQueue queue(context, device);
 
     while (1) {
-        buf[4] = '@';
-        queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
-        for (int i = 0; i < 1; i++) {
+        // buf[4] = '@';
+        // queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
+        for (int i = 0; i < 1000; i++) {
             kernel.setArg(1, iteration);
             // NDRange = num of parallel operations
             queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange);
@@ -147,6 +154,8 @@ int main(){
 
         queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, sizeof(buf), buf);
         print_buf(width,height,buf);
+
+        // _sleep(10);
     }
 
     return 0;
