@@ -6,7 +6,7 @@
         int width, int height, int n_width, int n_height){
      int index = get_global_id(0);
 
-    if (index == (iteration/10) % (width*2)) {
+    if (index == (iteration/10) % (width*n_width)) {
         data[index] = '@';
         return;
     }
@@ -21,8 +21,8 @@
      int x = index % ((width + 1)/n_width);
      int y = index / ((width + 1)/n_height);
 
-     x = (x * n_width) + iteration%2;
-     y = (y * n_height) + iteration%2;
+     x = (x * n_width) + iteration%n_width;
+     y = (y * n_height) + iteration%n_height;
 
      int index1 = y * width + x;
      int index2 = y * width + x+1;
