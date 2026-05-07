@@ -6,7 +6,7 @@
         int width, int height, int n_width, int n_height){
      int index = get_global_id(0);
 
-    if (index == 5) {
+    if (index == (iteration/10) % (width*2)) {
         data[index] = '@';
         return;
     }

@@ -47,20 +47,8 @@ cl::Device get_default_device(){
 
 void print_buf(int width, int height, char* buf) {
     std::cout << "\033[H";
-    for (int j = 0; j < width + 2; j++) {
-        std::cout << "-";
-    }
-    std::cout << std::endl;
-    for (int i = 0; i < height; i++) {
-        std::cout << "|";
-        for (int j = 0; j < width; j++) {
-            std::cout << buf[i * width + j];
-        }
-        std::cout << "|" << std::endl;
-    }
-    for (int j = 0; j < width + 2; j++) {
-        std::cout << "-";
-    }
+
+    std::cout.write(buf,(width+3) * (height+2));
     std::cout << std::endl;
     
 }
@@ -100,21 +88,41 @@ int main(){
      * Create buffers and allocate memory on the device.
      * */
 
-    const int width = 256;
+    const int width = 712;
     const int n_width = 2;
-    const int height = 128;
+    const int height = 512;
     const int n_height = 2;
 
-    // 16x16 world
-    char buf[width * height] = {};
+    // nxn world
+    char* buf = new char[width * height]();
+    char* output_buf = new char[(width+3) * (height+2)]();
+
+    for (int i = 0; i < width + 2; i++) {
+        output_buf[i] = '-';
+        output_buf[(width+3) * (height+1) + i] = '-';
+    }
+
+    for (int i = 0; i < height + 2; i++) {
+        output_buf[(width + 3) * i + width + 2] = '\n';
+        
+        if (i == 0 || i == height + 1) continue;
+        
+        output_buf[(width + 3) * i] = '|';
+        output_buf[(width + 3) * i + width + 1] = '|';
+    }
+
+    output_buf[(width+3) * (height+2) - 1] = '\0';
+
+
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             buf[i*width + j] = ' ';
+            output_buf[(i+1)*(width+3) + (j+1)] = ' ';
         }
     }
 
-    cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(buf),buf);
+    cl::Buffer memBuf(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
     cl::Kernel kernel(program, "helloWorld", nullptr);
 
     /**
@@ -126,7 +134,7 @@ int main(){
     int* spawners;
     spawners = new int {1};
 
-    char iteration = 'A';
+    int iteration = 0;
     kernel.setArg(0, memBuf);
     kernel.setArg(2, width);
     kernel.setArg(3, height);
@@ -144,7 +152,7 @@ int main(){
     while (1) {
         // buf[4] = '@';
         // queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100000; i++) {
             kernel.setArg(1, iteration);
             // NDRange = num of parallel operations
             queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange);
@@ -152,10 +160,20 @@ int main(){
             iteration++;
         }
 
-        queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, sizeof(buf), buf);
-        print_buf(width,height,buf);
 
-        // _sleep(10);
+        queue.enqueueReadBuffer(memBuf, CL_TRUE, 0, width * height * sizeof(buf[0]), buf);
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
+                // std::cout << buf[i*width + j];
+            }
+            // std::cout << std::endl;
+        }
+
+
+        print_buf(width,height,output_buf);
+
     }
 
     return 0;
