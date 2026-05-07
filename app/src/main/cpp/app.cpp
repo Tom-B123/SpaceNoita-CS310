@@ -1,5 +1,7 @@
 #include "CL/cl.h"
 #include "CL/opencl.hpp"
+#include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <stdlib.h>
 #include<vector>
@@ -53,6 +55,24 @@ void print_buf(int width, int height, char* buf) {
     
 }
 
+class FPSCount {
+    private:
+        std::chrono::steady_clock::time_point last_time;
+    public:
+        FPSCount() {
+            last_time = std::chrono::steady_clock::now();
+        }
+        void nextFrame() {
+            auto new_time = std::chrono::steady_clock::now();
+            
+            double delta = std::chrono::duration_cast<std::chrono::milliseconds>(new_time - last_time).count();
+            std::cout << "\033[1;0HFPS: " << std::fixed << std::setprecision(1) << (1000.0/delta) << "     ";
+            std::cout.flush();
+
+            last_time = new_time;
+        }
+};
+
 int main(){
 
     /**
@@ -88,10 +108,12 @@ int main(){
      * Create buffers and allocate memory on the device.
      * */
 
-    const int width = 712;
+    const int width = 700;
     const int n_width = 2;
-    const int height = 512;
+    const int height = 212;
     const int n_height = 2;
+
+    FPSCount fps = FPSCount();
 
     // nxn world
     char* buf = new char[width * height]();
@@ -148,14 +170,16 @@ int main(){
      * */
 
     cl::CommandQueue queue(context, device);
+    cl::Event completeEvent;
 
     while (1) {
         // buf[4] = '@';
         // queue.enqueueWriteBuffer(memBuf,CL_TRUE,0,sizeof(buf),buf);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 100; i++) {
             kernel.setArg(1, iteration);
             // NDRange = num of parallel operations
-            queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange);
+            queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width * height / n_width / n_height), cl::NullRange,nullptr,&completeEvent);
+            completeEvent.wait();
 
             iteration++;
         }
@@ -166,13 +190,13 @@ int main(){
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
-                // std::cout << buf[i*width + j];
             }
-            // std::cout << std::endl;
         }
 
 
         print_buf(width,height,output_buf);
+
+        fps.nextFrame();
 
     }
 
