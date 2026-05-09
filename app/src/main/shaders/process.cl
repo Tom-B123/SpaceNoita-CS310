@@ -5,14 +5,14 @@
 
 
 #define PROPERTY_POWDER  (1 << 0)
-#define PROPERTY_LIQUID  (1 << 1) | PROPERTY_POWDER
+#define PROPERTY_LIQUID  (1 << 1) 
 #define PROPERTY_SOLID   (1 << 2)
 
 __constant uchar material_properties[256] = {
     0,
 
     [MATERIAL_SAND] = PROPERTY_POWDER,
-    [MATERIAL_WATER] = PROPERTY_LIQUID,
+    [MATERIAL_WATER] = PROPERTY_LIQUID | PROPERTY_POWDER,
     [MATERIAL_ROCK] = PROPERTY_SOLID,
 };
 __constant uchar material_weights[256] = {
@@ -24,6 +24,48 @@ __constant uchar material_weights[256] = {
     [MATERIAL_ROCK]  = 255,
 };
 
+
+bool choice_swap(bool do_swap, __global char* data, bool cond1, int i1, int i2, bool cond2, int i3, int i4) {
+    /* // If neither are true, we must return false */
+    /* if (!cond1 && !cond2) { return false; } */
+    /**/
+    /* char tmp; */
+    /* // If both are true, pick which one to do based on random do_swap value */
+    /* if (cond1 && cond2) { */
+    /*     printf("Both true\n"); */
+        // Swap the left and right differently based on swap result.
+    if (do_swap && cond) {
+        tmp = data[i1];
+        data[i1] = data[i2];
+        data[i2] = tmp;
+        return true;
+    }
+            /* tmp = data[i3]; */
+            /* data[i3] = data[i4]; */
+            /* data[i4] = tmp; */
+        }   else {
+            tmp = data[i3];
+            data[i3] = data[i4];
+            data[i4] = tmp;
+            return true;
+            /* tmp = data[i1]; */
+            /* data[i1] = data[i2]; */
+            /* data[i2] = tmp; */
+        }
+    }
+    else if (cond1){
+        printf("Cond 1 true\n");
+        tmp = data[i1];
+        data[i1] = data[i2];
+        data[i2] = tmp;
+        return true;
+    }
+    printf("Cond 2 true\n");
+    tmp = data[i3];
+    data[i3] = data[i4];
+    data[i4] = tmp;
+    return true;
+}
 
 __kernel void process(__global char* data,int iteration, 
         int width, int height, int n_width, int n_height){
@@ -54,17 +96,116 @@ __kernel void process(__global char* data,int iteration,
     char tmp;
     bool moved = false;
 
-    if (index1 < index3 && properties1 & PROPERTY_POWDER && !(properties3 & PROPERTY_SOLID) && 
-        weight1 > weight3) {
+    // Compare [' ] and [. ]
+    if (
+        index1 < index3 && 
+        properties1 & PROPERTY_POWDER && 
+        !(properties3 & PROPERTY_SOLID) && 
+        weight1 > weight3
+       ){
         tmp = data[index1];
         data[index1] = data[index3];
         data[index3] = tmp;
+        moved = true;
     }
-    if (index2 < index4 && properties2 & PROPERTY_POWDER && !(properties4 & PROPERTY_SOLID) && 
-        weight2 > weight4) {
+    // Compare [ '] and [ .]
+    if (
+        index2 < index4 && 
+        properties2 & PROPERTY_POWDER && 
+        !(properties4 & PROPERTY_SOLID) && 
+        weight2 > weight4
+       ){
         tmp = data[index2];
         data[index2] = data[index4];
         data[index4] = tmp;
+        moved = true;
+    }
+    if (!moved) {
+        moved = choice_swap(
+                false,
+                data,
+                // Compare [' ] and [ .]
+                index1 < index4 && 
+                properties1 & PROPERTY_POWDER && 
+                !(properties4 & PROPERTY_SOLID) && 
+                weight1 > weight4,
+                index1,
+                index4,
+                // Compare [. ] and [ ']
+                index2 < index3 && 
+                properties2 & PROPERTY_POWDER && 
+                !(properties3 & PROPERTY_SOLID) && 
+                weight2 > weight3,
+                index2,
+                index3
+        );
+        /* if () { */
+        /*     tmp = data[index1]; */
+        /*     data[index1] = data[index4]; */
+        /*     data[index4] = tmp; */
+        /*     moved = true; */
+        /* } */
+        /* if () { */
+        /*     tmp = data[index2]; */
+        /*     data[index2] = data[index3]; */
+        /*     data[index3] = tmp; */
+        /*     moved = true; */
+        /* } */
+    }
+    if (!moved) {
+        // Compare [' ] and [ ']
+
+        moved |=choice_swap(
+                false,
+                data,
+                // Compare [' ] and [ ']
+                index1 < index2 && 
+                properties1 & PROPERTY_LIQUID && 
+                !(properties2 & PROPERTY_SOLID) && 
+                weight1 > weight2,
+                index1,
+                index2,
+                // Compare [ '] and [' ]
+                index2 < index1 && 
+                properties2 & PROPERTY_LIQUID && 
+                !(properties1 & PROPERTY_SOLID) && 
+                weight2 > weight1,
+                index2,
+                index1
+        );
+        moved |=choice_swap(
+                false,
+                data,
+                // Compare [. ] and [ .]
+                index3 < index4 && 
+                properties3 & PROPERTY_LIQUID && 
+                !(properties4 & PROPERTY_SOLID) && 
+                weight3 > weight4,
+                index3,
+                index4,
+                // Compare [ .] and [. ]
+                index4 < index3 && 
+                properties4 & PROPERTY_LIQUID && 
+                !(properties3 & PROPERTY_SOLID) && 
+                weight4 > weight3,
+                index4,
+                index3
+        );
+        /* if (index1 < index2 && properties1 & PROPERTY_LIQUID && !(properties2 & PROPERTY_SOLID) &&  */
+        /*         weight1 > weight2) { */
+        /*     tmp = data[index1]; */
+        /*     data[index1] = data[index2]; */
+        /*     data[index2] = tmp; */
+        /*     moved = true; */
+        /* } */
+        /* // Compare [. ] and [ .] */
+        /* if (index3 < index4 && properties3 & PROPERTY_LIQUID && !(properties4 & PROPERTY_SOLID) &&  */
+        /*         weight3 > weight4) { */
+        /*     tmp = data[index3]; */
+        /*     data[index3] = data[index4]; */
+        /*     data[index4] = tmp; */
+        /*     moved = true; */
+        /* } */
     }
     /* if (index1 < index3) { */
     /*     if (data[index1] != ' ' && data[index3] == ' ') { */

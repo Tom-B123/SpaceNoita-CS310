@@ -14,7 +14,7 @@ int main_loop(CL cl_components,
 
 
     // Update n times per tick
-    int update_count = 4;
+    int update_count = 1;
 
     int iteration = 0;
 
@@ -44,8 +44,8 @@ int main_loop(CL cl_components,
 
         fps.nextFrame();
 
-        buf[(30/10) % width] = 'S';
-        buf[((width / 2) + (30/10)) % width] = 'W';
+        buf[(width / 4) % width] = 'S';
+        buf[((width / 2) + (width / 4)) % width] = 'W';
         cl_components.enqueueWriteBuffer(width, height, buf);
     }
 

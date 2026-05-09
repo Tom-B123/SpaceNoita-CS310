@@ -384,13 +384,13 @@ bool test_tower() {
         ' ',' ',' ',' ',
         ' ',' ',' ',' ',
         ' ',' ',' ',' ',
-        'S',' ',' ',' ',
+        ' ',' ',' ',' ',
         'S','S',' ',' ',
-        'S','S','S',' '
+        'S','S','S','S'
     };
     return is_expected(4,6,initial,expected,10);
 }
-// Test 12 Checks a tower will spread out as expected
+// Test 13 Checks a tower will spread out as expected
 bool test_two_towers() {
     char* initial;
     char* expected;
@@ -439,12 +439,12 @@ bool test_water_sand() {
         'W',' ',' ',' ',
         'W',' ',' ',' ',
         'W',' ',' ','S',
-        'W',' ','S','S'
+        'W','W','S','S'
     };
     expected = new char[]{
         ' ',' ',' ',' ',
         ' ',' ',' ',' ',
-        'W','W',' ','S',
+        'W','W','W','S',
         'W','W','S','S'
     };
     return is_expected(4,4,initial,expected,15);
