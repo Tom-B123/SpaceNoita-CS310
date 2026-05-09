@@ -44,8 +44,8 @@ int main_loop(CL cl_components,
 
         fps.nextFrame();
 
-        buf[(iteration/10) % width] = 'S';
-        buf[((width / 2) + (iteration/10)) % width] = 'W';
+        buf[(30/10) % width] = 'S';
+        buf[((width / 2) + (30/10)) % width] = 'W';
         cl_components.enqueueWriteBuffer(width, height, buf);
     }
 

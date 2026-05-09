@@ -57,7 +57,7 @@ class CL {
             device = devices.front();
             
 
-            std::string src = get_shader_src("hello_world.cl");
+            std::string src = get_shader_src("process.cl");
             /**
              * Compile the program which will run on the device.
              * */
@@ -87,7 +87,7 @@ class CL {
 
             // Verify kernel exists
 
-            kernel = cl::Kernel(program, "helloWorld", &err);
+            kernel = cl::Kernel(program, "process", &err);
             if (err != CL_SUCCESS) {
                 std::cerr << "Failed to create kernel 'helloWorld'! Error: " << err << std::endl;
 
