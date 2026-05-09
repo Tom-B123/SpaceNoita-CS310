@@ -3,7 +3,6 @@
 
 #include "CL/cl.h"
 #include "CL/opencl.hpp"
-#include "GLFW/glfw3.h"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -16,10 +15,9 @@
 #include <Windows.h>
 #include <string>
 
-const int WORLD_WIDTH = 6;
-const int WORLD_HEIGHT = 8;
-const int WINDOW_WIDTH = 60;
-const int WINDOW_HEIGHT = 40;
+const int WORLD_WIDTH = 200;
+const int WORLD_HEIGHT = 200;
+const int PIXEL_SCALE = 4;
 const int CELL_WIDTH = 2;
 const int CELL_HEIGHT = 2;
 

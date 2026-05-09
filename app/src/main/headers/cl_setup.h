@@ -4,6 +4,9 @@
 #include "app.h"
 #include "CL/opencl.hpp"
 
+std::string find_shader_file(std::string shader); 
+std::string get_shader_src(std::string shader); 
+
 class CL {
     private:
         cl::Platform platform;
@@ -15,28 +18,6 @@ class CL {
         cl::Context context;
         cl::Program program;
 
-        std::string find_kernel_file() {
-            std::vector<std::string> search_paths = {
-                "app/src/main/cpp/hello_world.cl",
-                "../app/src/main/cpp/hello_world.cl",
-                "../../app/src/main/cpp/hello_world.cl",
-                "../../../app/src/main/cpp/hello_world.cl",
-                "src/main/cpp/hello_world.cl",
-                "../src/main/cpp/hello_world.cl",
-                "hello_world.cl",
-                "./hello_world.cl"
-            };
-
-            for (const auto& path : search_paths) {
-                std::ifstream test(path);
-                if (test.is_open()) {
-                    test.close();
-                    return path;
-                }
-            }
-
-            return "C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/cpp/hello_world.cl";
-        }
     public:
         /**
          *  Initialise OpenCL: 
@@ -75,9 +56,8 @@ class CL {
 
             device = devices.front();
             
-            std::ifstream hello_world_file(find_kernel_file());
-            std::string src(std::istreambuf_iterator<char>(hello_world_file), (std::istreambuf_iterator<char>()));
 
+            std::string src = get_shader_src("hello_world.cl");
             /**
              * Compile the program which will run on the device.
              * */

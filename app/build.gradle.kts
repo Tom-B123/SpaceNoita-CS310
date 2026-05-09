@@ -28,6 +28,9 @@ tasks.withType(CppCompile::class).configureEach {
     // Add your OpenCL include path
     compilerArgs.add("-IC:/Users/tomhb/University/OpenCL/OpenCL-SDK/install/include")
     compilerArgs.add("-IC:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers/include")
+    
+    compilerArgs.add("-DGLEW_STATIC")
+    compilerArgs.add("-DGLFW_STATIC")
 
 }
 
@@ -36,6 +39,7 @@ tasks.withType(LinkExecutable::class).configureEach {
     
     linkerArgs.add("C:/Users/tomhb/University/OpenCL/OpenCL-SDK/install/lib/OpenCL.lib")
     linkerArgs.add("C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers/lib/glfw3.lib")
+    linkerArgs.add("C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers/lib/glew32s.lib")
 
     // Add required Windows system libraries for GLFW
     linkerArgs.add("user32.lib")     // Windows API functions
