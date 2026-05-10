@@ -11,18 +11,12 @@ int main_loop(CL cl_components,
     // Tracks the simulation framerate
     FPSCount fps = FPSCount(120);
 
-
     // Update n times per tick
-    int update_count = 1;
+    int update_count = 15;
 
     int iteration = 0;
 
-    char* spawners = init_buf(width,height,0); //new char[width * height];
-    // for (int i = 0; i < height; i++) {
-    //     for (int j = 0; j < width; j++) {
-    //         spawners[i * width + j] = 0;
-    //     }
-    // }
+    char* spawners = init_buf(width,height,0);
 
     // Send data to the GPU.
     int data_buffer = cl_components.setArg(0,buf,width,height);
@@ -31,31 +25,24 @@ int main_loop(CL cl_components,
     cl_components.setArg(4, n_width);
     cl_components.setArg(5, n_height);
     int spawner_buffer = cl_components.setArg(6, spawners,width,height);
-
-
-
     // Create the queue for queueing GPU tasks
 
     // Main loop, 
     //
 
-    int plinko_count = 0;
-    for (int j = 0; j < plinko_count; j++) {
-        for (int i = width / 6; i < 5 * width / 6; i+=2) {
-            buf[width * ((2*j) + height/2) + i + j%2] = 'R';
-            buf[width * (plinko_count + 10 + j+height/2) + i/2] = 'R';
-        }
-    }
+    // int plinko_count = 10;
+    // for (int j = 0; j < plinko_count; j++) {
+    //     for (int i = width / 6; i < 5 * width / 6; i+=2) {
+    //         buf[width * ((2*j) + height/2) + i + j%2] = 'R';
+    //         buf[width * (plinko_count + 10 + j+height/2) + i/2] = 'R';
+    //     }
+    // }
 
     char materials[] = {'S','O','W'};
 
-    for (int i = 0; i < width; i+=20) {
-        spawners[(height/6) * width + i] = materials[(i/5) % 3];
+    for (int i = 0; i < width; i+=5) {
+        spawners[(1 * height / 6) * width + i] = materials[(i/5) % 3];
     }
-    // spawners[(width / 4) % width] = 'S';
-    // spawners[((width / 2) + (width / 4)) % width] = 'W';
-    // spawners[width / 2] = 'O';
-    // spawners[width / 3] = 'O';
 
     cl_components.enqueueWriteBuffer(width, height, buf,data_buffer);
     cl_components.enqueueWriteBuffer(width, height, spawners,spawner_buffer);

@@ -46,22 +46,18 @@ __kernel void process(__global char* data,int iteration,
 
     int index = get_global_id(0);
 
+    // X -> index wrapped around width
+    int x = index % (width/n_width);
+    // Y -> index divided by width
+    int y = index / (width/n_height);
 
-    if (spawners[index] > 0) {
-        if (data[index] == MATERIAL_AIR) {
-            data[index] = spawners[index];
-            return;
-        }
-    }
-
-    int x = index % ((width + 1)/n_width);
-    int y = index / ((width + 1)/n_height);
 
     bool left_priority = ((iteration << 3) % 13)+1 >= (iteration + ((x + y) << 5)) % 17;
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
-    int direction = 0;
+
+    int direction = 3;
 
     int indicies[] = {
         y * width + x,                          // [' ]
@@ -85,7 +81,38 @@ __kernel void process(__global char* data,int iteration,
     int index2 = indicies[orderings[4 * direction + 1]];
     int index3 = indicies[orderings[4 * direction + 2]];
     int index4 = indicies[orderings[4 * direction + 3]];
+
+    if (direction == 3 || direction == 1) { 
+        int tmp = x; x = y; y = tmp;
+        tmp = width; width = height; height = tmp;
+    }
     
+
+    if (spawners[index1] > 0) {
+        if (data[index1] == MATERIAL_AIR) {
+            data[index1] = spawners[index1];
+            return;
+        }
+    }
+    if (spawners[index2] > 0) {
+        if (data[index2] == MATERIAL_AIR) {
+            data[index2] = spawners[index2];
+            return;
+        }
+    }
+    if (spawners[index3] > 0) {
+        if (data[index3] == MATERIAL_AIR) {
+            data[index3] = spawners[index3];
+            return;
+        }
+    }
+    if (spawners[index4] > 0) {
+        if (data[index4] == MATERIAL_AIR) {
+            data[index4] = spawners[index4];
+            return;
+        }
+    }
+
     int properties1 = material_properties[data[index1]];
     int properties2 = material_properties[data[index2]];
     int properties3 = material_properties[data[index3]];
@@ -101,8 +128,7 @@ __kernel void process(__global char* data,int iteration,
 
     // Compare [' ] and [. ]
     if (
-        x>=0 && x + 1 < width - 1 &&
-        y >= 0 && y + 1 < height - 1 && 
+        y < height - 1 && y >= 0 &&
         properties1 & PROPERTY_POWDER && 
         !(properties3 & PROPERTY_SOLID) && 
         weight1 > weight3
@@ -114,8 +140,7 @@ __kernel void process(__global char* data,int iteration,
     }
     // Compare [ '] and [ .]
     if (
-        x>=0 && x + 1 < width - 1 &&
-        y >= 0 && y + 1 < height - 1 && 
+        y  < height - 1 && y >= 0 &&
         properties2 & PROPERTY_POWDER && 
         !(properties4 & PROPERTY_SOLID) && 
         weight2 > weight4
@@ -130,8 +155,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [' ] and [ .]
-                x>= 0 && x+1 < width-1 && 
-                y >= 0 && y + 1 < height - 1 && 
+                x < width-1 && 
+                y  < height - 1 && y >= 0 &&
                 properties1 & PROPERTY_POWDER && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight1 > weight4,
@@ -144,8 +169,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [. ] and [ ']
-                x >= 0 && x+1< width - 1 && 
-                y >= 0 && y + 1 < height - 1 && 
+                x < width - 1 && 
+                y < height - 1 && y >= 0 &&
                 properties2 & PROPERTY_POWDER && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight2 > weight3,
@@ -159,8 +184,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [' ] and [ ']
-                x >= 0 && x + 1 < width - 1 && 
-                y >= 0 && y + 1 < height - 1 && 
+                x < width - 1 && 
+                y < height - 1 && y >= 0 &&
                 properties1 & PROPERTY_LIQUID && 
                 !(properties2 & PROPERTY_SOLID) && 
                 weight1 > weight2,
@@ -173,8 +198,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ '] and [' ]
-                x >= 0 && x + 1 < width - 1 && 
-                y >= 0 && y + 1 < height - 1 && 
+                x < width - 1 && 
+                y < height - 1 && y >= 0 &&
                 properties2 & PROPERTY_LIQUID && 
                 !(properties1 & PROPERTY_SOLID) && 
                 weight2 > weight1,
@@ -187,8 +212,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [. ] and [ .]
-                x >= 0 && x + 1 < width - 1 && 
-                y >= 0 && y + 1 < height - 1 && 
+                x < width - 1 && 
+                y < height - 1 && 
                 properties3 & PROPERTY_LIQUID && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight3 > weight4,
@@ -201,8 +226,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ .] and [. ]
-                x >= 0 && x + 1 < width - 1 && 
-                y >= 0 && y + 1 < height - 1 && 
+                x < width - 1 && 
+                y >= 0 && y < height - 1 && 
                 properties4 & PROPERTY_LIQUID && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight4 > weight3,
@@ -210,63 +235,4 @@ __kernel void process(__global char* data,int iteration,
                 index3
         );
     }
-        /* if (index1 < index2 && properties1 & PROPERTY_LIQUID && !(properties2 & PROPERTY_SOLID) &&  */
-        /*         weight1 > weight2) { */
-        /*     tmp = data[index1]; */
-        /*     data[index1] = data[index2]; */
-        /*     data[index2] = tmp; */
-        /*     moved = true; */
-        /* } */
-        /* // Compare [. ] and [ .] */
-        /* if (index3 < index4 && properties3 & PROPERTY_LIQUID && !(properties4 & PROPERTY_SOLID) &&  */
-        /*         weight3 > weight4) { */
-        /*     tmp = data[index3]; */
-        /*     data[index3] = data[index4]; */
-        /*     data[index4] = tmp; */
-        /*     moved = true; */
-        /* } */
-    /* if (index1 < index3) { */
-    /*     if (data[index1] != ' ' && data[index3] == ' ') { */
-    /*         char tmp = data[index1]; */
-    /*         data[index1] = data[index3]; */
-    /*         data[index3] = tmp; */
-    /*         moved = true; */
-    /*     } */
-    /*     if (data[index2] != ' ' && data[index4] == ' ') { */
-    /*         char tmp = data[index2]; */
-    /*         data[index2] = data[index4]; */
-    /*         data[index4] = tmp; */
-    /*         moved = true; */
-    /*     } */
-    /*     if (moved) return; */
-    /*     // If index2 has wrapped around, don't make this move */
-    /*     if (index1 >= index2) return; */
-    /**/
-    /**/
-    /*     if (is_powder(data[index1]) && data[index1] != ' ' && data[index3] != ' '&& data[index4] == ' ') { */
-    /*         char tmp = data[index1]; */
-    /*         data[index1] = data[index4]; */
-    /*         data[index4] = tmp; */
-    /*         moved = true; */
-    /*     } */
-    /*     if (is_powder(data[index2]) && data[index2] != ' ' && data[index4] != ' '&& data[index3] == ' ') { */
-    /*         char tmp = data[index3]; */
-    /*         data[index3] = data[index2]; */
-    /*         data[index2] = tmp; */
-    /*         moved = true; */
-    /*     } */
-    /*     if (moved) return; */
-    /*     if (is_liquid(data[index1]) && data[index1] != ' ' && data[index2] == ' ' || */
-    /*         is_liquid(data[index2]) && data[index2] != ' ' && data[index1] == ' ') { */
-    /*         char tmp = data[index1]; */
-    /*         data[index1] = data[index2]; */
-    /*         data[index2] = tmp; */
-    /*     } */
-    /*     if (is_liquid(data[index3]) && data[index3] != ' ' && data[index4] == ' ' || */
-    /*         is_liquid(data[index4]) && data[index4] != ' ' && data[index3] == ' ') { */
-    /*         char tmp = data[index3]; */
-    /*         data[index3] = data[index4]; */
-    /*         data[index4] = tmp; */
-    /*     } */
-    /* } */
 }

@@ -60,3 +60,17 @@ tasks.withType(LinkExecutable::class).configureEach {
     linkerArgs.add("opengl32.lib")   // OpenGL (if using OpenGL context)
     linkerArgs.add("advapi32.lib")   // Advanced Windows API
 }
+
+tasks.register<Exec>("run") {
+    dependsOn(tasks.build)  // Build first
+    
+    // For Windows
+    val exePath = "C:/Users/tomhb/University/cs310/FallingSandIter1/app/build/exe/main/debug/app.exe"  // Adjust path as needed
+    commandLine("cmd", "/c", exePath)
+    
+    // For cross-platform:
+    // commandLine(exePath)
+}
+
+// Make 'run' the default task when no arguments are provided
+defaultTasks("build", "run")
