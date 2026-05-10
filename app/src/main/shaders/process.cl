@@ -25,52 +25,28 @@ __constant uchar material_weights[256] = {
 };
 
 
-bool choice_swap(bool do_swap, __global char* data, bool cond1, int i1, int i2, bool cond2, int i3, int i4) {
-    /* // If neither are true, we must return false */
-    /* if (!cond1 && !cond2) { return false; } */
-    /**/
-    /* char tmp; */
-    /* // If both are true, pick which one to do based on random do_swap value */
-    /* if (cond1 && cond2) { */
-    /*     printf("Both true\n"); */
-        // Swap the left and right differently based on swap result.
+bool choice_swap(bool do_swap, __global char* data, 
+    bool cond, int i1, int i2) {
+    char tmp;
     if (do_swap && cond) {
         tmp = data[i1];
         data[i1] = data[i2];
         data[i2] = tmp;
         return true;
     }
-            /* tmp = data[i3]; */
-            /* data[i3] = data[i4]; */
-            /* data[i4] = tmp; */
-        }   else {
-            tmp = data[i3];
-            data[i3] = data[i4];
-            data[i4] = tmp;
-            return true;
-            /* tmp = data[i1]; */
-            /* data[i1] = data[i2]; */
-            /* data[i2] = tmp; */
-        }
-    }
-    else if (cond1){
-        printf("Cond 1 true\n");
-        tmp = data[i1];
-        data[i1] = data[i2];
-        data[i2] = tmp;
-        return true;
-    }
-    printf("Cond 2 true\n");
-    tmp = data[i3];
-    data[i3] = data[i4];
-    data[i4] = tmp;
-    return true;
+    return false;
 }
 
 __kernel void process(__global char* data,int iteration, 
         int width, int height, int n_width, int n_height){
 
     int index = get_global_id(0);
+
+    uint rng = index * 1664525u + iteration * 1103515245u;
+    rng = rng * 1103515245u + 12345u;
+    float random = (rng & 0x7FFFFFFF) / (float)0x7FFFFFFF;
+
+    bool left_priority = random < 0.5;
 
     int x = index % ((width + 1)/n_width);
     int y = index / ((width + 1)/n_height);
@@ -121,8 +97,8 @@ __kernel void process(__global char* data,int iteration,
         moved = true;
     }
     if (!moved) {
-        moved = choice_swap(
-                false,
+        moved |= choice_swap(
+                left_priority,
                 data,
                 // Compare [' ] and [ .]
                 index1 < index4 && 
@@ -130,7 +106,13 @@ __kernel void process(__global char* data,int iteration,
                 !(properties4 & PROPERTY_SOLID) && 
                 weight1 > weight4,
                 index1,
-                index4,
+                index4
+        );
+    }
+    if (!moved) {
+        moved |=choice_swap(
+                !left_priority,
+                data,
                 // Compare [. ] and [ ']
                 index2 < index3 && 
                 properties2 & PROPERTY_POWDER && 
@@ -139,24 +121,11 @@ __kernel void process(__global char* data,int iteration,
                 index2,
                 index3
         );
-        /* if () { */
-        /*     tmp = data[index1]; */
-        /*     data[index1] = data[index4]; */
-        /*     data[index4] = tmp; */
-        /*     moved = true; */
-        /* } */
-        /* if () { */
-        /*     tmp = data[index2]; */
-        /*     data[index2] = data[index3]; */
-        /*     data[index3] = tmp; */
-        /*     moved = true; */
-        /* } */
     }
     if (!moved) {
         // Compare [' ] and [ ']
-
         moved |=choice_swap(
-                false,
+                left_priority,
                 data,
                 // Compare [' ] and [ ']
                 index1 < index2 && 
@@ -164,7 +133,13 @@ __kernel void process(__global char* data,int iteration,
                 !(properties2 & PROPERTY_SOLID) && 
                 weight1 > weight2,
                 index1,
-                index2,
+                index2
+        );
+    }
+    if (!moved) {
+        moved |= choice_swap(
+                !left_priority,
+                data,
                 // Compare [ '] and [' ]
                 index2 < index1 && 
                 properties2 & PROPERTY_LIQUID && 
@@ -173,8 +148,10 @@ __kernel void process(__global char* data,int iteration,
                 index2,
                 index1
         );
+    }
+    if (!moved) {
         moved |=choice_swap(
-                false,
+                left_priority,
                 data,
                 // Compare [. ] and [ .]
                 index3 < index4 && 
@@ -182,7 +159,13 @@ __kernel void process(__global char* data,int iteration,
                 !(properties4 & PROPERTY_SOLID) && 
                 weight3 > weight4,
                 index3,
-                index4,
+                index4
+        );
+    }
+    if (!moved) {
+        moved |=choice_swap(
+                !left_priority,
+                data,
                 // Compare [ .] and [. ]
                 index4 < index3 && 
                 properties4 & PROPERTY_LIQUID && 
@@ -191,6 +174,7 @@ __kernel void process(__global char* data,int iteration,
                 index4,
                 index3
         );
+    }
         /* if (index1 < index2 && properties1 & PROPERTY_LIQUID && !(properties2 & PROPERTY_SOLID) &&  */
         /*         weight1 > weight2) { */
         /*     tmp = data[index1]; */
@@ -206,7 +190,6 @@ __kernel void process(__global char* data,int iteration,
         /*     data[index4] = tmp; */
         /*     moved = true; */
         /* } */
-    }
     /* if (index1 < index3) { */
     /*     if (data[index1] != ' ' && data[index3] == ' ') { */
     /*         char tmp = data[index1]; */
