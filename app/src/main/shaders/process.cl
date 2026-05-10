@@ -45,13 +45,18 @@ __kernel void process(__global char* data,int iteration,
 
     int index = get_global_id(0);
 
-    /* uint rng = index * 1664525u + iteration * 1103515245u; */
-    /* rng = rng * 1103515245u + 12345u; */
-    /* float random = (rng & 0x7FFFFFFF) / (float)0x7FFFFFFF; */
-
-
     int x = index % ((width + 1)/n_width);
     int y = index / ((width + 1)/n_height);
+
+
+    /* char type = (char)spawners[0]; */
+    /* int s_x = spawners[1]; */
+    /* int s_y = spawners[2]; */
+    /**/
+    /* if (x == s_x && y == s_y) { */
+    /*     data[s_y * width + s_x] = type; */
+    /*     return; */
+    /* } */
 
     bool left_priority = ((iteration << 3) % 13)+1 >= (iteration + (x + y) << 5) % 17;
     x = (x * n_width) + (iteration%n_width);

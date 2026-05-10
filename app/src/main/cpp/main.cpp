@@ -14,16 +14,18 @@ int main_loop(CL cl_components,
 
 
     // Update n times per tick
-    int update_count = 3;
+    int update_count = 250;
 
     int iteration = 0;
 
+    int* spawners = new int[]{'W',20,20,'\0'};
     // Send data to the GPU.
     cl_components.setBufferArg(0);
     cl_components.setArg(2, width);
     cl_components.setArg(3, height);
     cl_components.setArg(4, n_width);
     cl_components.setArg(5, n_height);
+    // cl_components.setArg(6, spawners);
 
 
 
@@ -41,7 +43,9 @@ int main_loop(CL cl_components,
         buf[width * (15+height/2) + i/2] = 'R';
     }
     cl_components.enqueueWriteBuffer(width, height, buf);
+    // cl_components.enqueueWriteBuffer(4, 1, spawners);
     int* count = new int[256];
+
     while (window.is_open()) {
 
         update(&cl_components, &iteration, update_count, width, height, n_width, n_height,
@@ -64,10 +68,10 @@ int main_loop(CL cl_components,
             if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
         }
 
-        if (count['S'] < 5000) buf[(width / 4) % width] = 'S';
-        if (count['W'] < 5000) buf[((width / 2) + (width / 4)) % width] = 'W';
-        if (count['O'] < 5000) buf[width / 2] = 'O';
-        cl_components.enqueueWriteBuffer(width, height, buf);
+        // if (count['S'] < 5000) buf[(width / 4) % width] = 'S';
+        // if (count['W'] < 5000) buf[((width / 2) + (width / 4)) % width] = 'W';
+        // if (count['O'] < 5000) buf[width / 2] = 'O';
+        // cl_components.enqueueWriteBuffer(width, height, buf);
 
 
     }
