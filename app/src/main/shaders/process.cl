@@ -47,8 +47,10 @@ __kernel void process(__global char* data,int iteration,
     int index = get_global_id(0);
 
     if (spawners[index] > 0) {
-        data[index] = spawners[index];
-        return;
+        if (data[index] == MATERIAL_AIR) {
+            data[index] = spawners[index];
+            return;
+        }
     }
 
     int x = index % ((width + 1)/n_width);

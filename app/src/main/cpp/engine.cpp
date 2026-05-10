@@ -61,9 +61,9 @@ void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::
     // std::cout << "Before: " << buf << std::endl;
     cl_components->enqueueReadBuffer(width, height,buf,data_buffer);
     // std::cout << "After: " << buf << std::endl;
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
-        }
-    }
+    // for (int i = 0; i < height; i++) {
+    //     for (int j = 0; j < width; j++) {
+    //         output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
+    //     }
+    // }
 }

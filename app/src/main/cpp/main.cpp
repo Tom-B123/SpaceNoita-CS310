@@ -13,7 +13,7 @@ int main_loop(CL cl_components,
 
 
     // Update n times per tick
-    int update_count = 250;
+    int update_count = 50;
 
     int iteration = 0;
 
@@ -39,19 +39,23 @@ int main_loop(CL cl_components,
     // Main loop, 
     //
 
-    for (int i = width / 6; i < 5 * width / 6; i+=2) {
-        buf[width * (height/2) + i] = 'R';
-        buf[width * (2+height/2) + i+1] = 'R';
-        buf[width * (4+height/2) + i] = 'R';
-        buf[width * (6+height/2) + i+1] = 'R';
-        buf[width * (8+height/2) + i] = 'R';
-        buf[width * (15+height/2) + i/2] = 'R';
+    int plinko_count = 15;
+    for (int j = 0; j < plinko_count; j++) {
+        for (int i = width / 6; i < 5 * width / 6; i+=2) {
+            buf[width * ((2*j) + height/2) + i + j%2] = 'R';
+            buf[width * (plinko_count + 10 + j+height/2) + i/2] = 'R';
+        }
     }
 
+    char materials[] = {'S','O','W'};
+
+    for (int i = 0; i < width; i+=5) {
+        spawners[i] = materials[(i/5) % 3];
+    }
     // spawners[(width / 4) % width] = 'S';
-    spawners[((width / 2) + (width / 4)) % width] = 'W';
-    spawners[width / 2] = 'O';
-    spawners[width / 3] = 'O';
+    // spawners[((width / 2) + (width / 4)) % width] = 'W';
+    // spawners[width / 2] = 'O';
+    // spawners[width / 3] = 'O';
 
     cl_components.enqueueWriteBuffer(width, height, buf,data_buffer);
     cl_components.enqueueWriteBuffer(width, height, spawners,spawner_buffer);
@@ -71,20 +75,21 @@ int main_loop(CL cl_components,
 
         fps.nextFrame();
     
-        for (int i = 0; i < 256; i++) {
-            count[i] = 0;
-        }
-        for (int i = 0; i < width * height; i++) {
-            count[buf[i]] ++;
-        }
-        for (int i = 0; i < 256; i++) {
-            if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
-        }
+        // for (int i = 0; i < 256; i++) {
+        //     count[i] = 0;
+        // }
+        // for (int i = 0; i < width * height; i++) {
+        //     count[buf[i]] ++;
+        // }
+        // for (int i = 0; i < 256; i++) {
+        //     if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
+        // }
 
     }
 
     delete[](buf);
     delete[](output_buf);
+    delete[](spawners);
     window.close();
 
     return 0;

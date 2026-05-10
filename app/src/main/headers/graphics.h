@@ -18,12 +18,12 @@ class GameWindow {
         GLuint shader_program;
         int width;
         int height;
-        int pixel_scale;
+        double pixel_scale;
         float* colours; 
         std::string vertexShaderSource;
         std::string fragmentShaderSource;
     public:
-        GameWindow(int n_width, int n_height,int n_pixel_scale) : 
+        GameWindow(int n_width, int n_height,double n_pixel_scale) : 
             width(n_width), height(n_height),pixel_scale(n_pixel_scale) {
 
                 colours = new float[256 * 3];
@@ -33,7 +33,7 @@ class GameWindow {
                 glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
                 glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-                window = glfwCreateWindow(width * pixel_scale, height * pixel_scale, "Sand Simulation", NULL, NULL);
+                window = glfwCreateWindow((int)(width * pixel_scale), (int)(height * pixel_scale), "Sand Simulation", NULL, NULL);
                 glfwMakeContextCurrent(window);
 
                 glewExperimental = GL_TRUE;
