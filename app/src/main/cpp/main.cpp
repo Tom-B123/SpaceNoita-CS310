@@ -32,6 +32,7 @@ int main_loop(CL cl_components,
     // Main loop, 
     //
 
+    int* count = new int[256];
     while (window.is_open()) {
 
         update(&cl_components, &iteration, update_count, width, height, n_width, n_height,
@@ -43,10 +44,22 @@ int main_loop(CL cl_components,
         window.draw();
 
         fps.nextFrame();
+    
+        for (int i = 0; i < 256; i++) {
+            count[i] = 0;
+        }
+        for (int i = 0; i < width * height; i++) {
+            count[buf[i]] ++;
+        }
+        for (int i = 0; i < 256; i++) {
+            if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
+        }
 
-        buf[(width / 4) % width] = 'S';
-        buf[((width / 2) + (width / 4)) % width] = 'W';
+        if (count['S'] < 500) buf[(width / 4) % width] = 'S';
+        if (count['W'] < 500) buf[((width / 2) + (width / 4)) % width] = 'W';
         cl_components.enqueueWriteBuffer(width, height, buf);
+
+
     }
 
     delete[](buf);

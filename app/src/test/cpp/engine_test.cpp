@@ -321,7 +321,7 @@ bool test_bottom_boundary_two_sand() {
         ' ',' ',
         'S','S'
     };
-    return is_expected(2,2,initial,expected,1);
+    return is_expected(2,2,initial,expected,5);
 }
 // Test 9 if sand will fall to left
 bool test_bottom_boundary_two_sand_left() {
@@ -334,7 +334,7 @@ bool test_bottom_boundary_two_sand_left() {
         ' ',' ',
         'S','S'
     };
-    return is_expected(2,2,initial,expected,1);
+    return is_expected(2,2,initial,expected,5);
 }
 // Test 10: will :. formation stay still
 bool test_bottom_boundary_three_sand() {

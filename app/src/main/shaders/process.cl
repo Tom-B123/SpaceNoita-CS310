@@ -42,15 +42,15 @@ __kernel void process(__global char* data,int iteration,
 
     int index = get_global_id(0);
 
-    uint rng = index * 1664525u + iteration * 1103515245u;
-    rng = rng * 1103515245u + 12345u;
-    float random = (rng & 0x7FFFFFFF) / (float)0x7FFFFFFF;
+    /* uint rng = index * 1664525u + iteration * 1103515245u; */
+    /* rng = rng * 1103515245u + 12345u; */
+    /* float random = (rng & 0x7FFFFFFF) / (float)0x7FFFFFFF; */
 
-    bool left_priority = random < 0.5;
 
     int x = index % ((width + 1)/n_width);
     int y = index / ((width + 1)/n_height);
 
+    bool left_priority = ((iteration << 3) % 13)+1 >= (iteration + (x + y) << 5) % 17;
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
@@ -141,7 +141,7 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ '] and [' ]
-                index2 < index1 && 
+                index2 > index1 && 
                 properties2 & PROPERTY_LIQUID && 
                 !(properties1 & PROPERTY_SOLID) && 
                 weight2 > weight1,
@@ -167,7 +167,7 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ .] and [. ]
-                index4 < index3 && 
+                index4 > index3 && 
                 properties4 & PROPERTY_LIQUID && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight4 > weight3,
