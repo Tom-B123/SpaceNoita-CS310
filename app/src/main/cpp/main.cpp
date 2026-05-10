@@ -13,16 +13,16 @@ int main_loop(CL cl_components,
 
 
     // Update n times per tick
-    int update_count = 130;
+    int update_count = 1;
 
     int iteration = 0;
 
-    char* spawners = new char[width * height];
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            spawners[i * width + j] = 0;
-        }
-    }
+    char* spawners = init_buf(width,height,0); //new char[width * height];
+    // for (int i = 0; i < height; i++) {
+    //     for (int j = 0; j < width; j++) {
+    //         spawners[i * width + j] = 0;
+    //     }
+    // }
 
     // Send data to the GPU.
     int data_buffer = cl_components.setArg(0,buf,width,height);
@@ -39,7 +39,7 @@ int main_loop(CL cl_components,
     // Main loop, 
     //
 
-    int plinko_count = 15;
+    int plinko_count = 0;
     for (int j = 0; j < plinko_count; j++) {
         for (int i = width / 6; i < 5 * width / 6; i+=2) {
             buf[width * ((2*j) + height/2) + i + j%2] = 'R';
@@ -49,8 +49,8 @@ int main_loop(CL cl_components,
 
     char materials[] = {'S','O','W'};
 
-    for (int i = 0; i < width; i+=5) {
-        spawners[i] = materials[(i/5) % 3];
+    for (int i = 0; i < width; i+=20) {
+        spawners[(height/6) * width + i] = materials[(i/5) % 3];
     }
     // spawners[(width / 4) % width] = 'S';
     // spawners[((width / 2) + (width / 4)) % width] = 'W';

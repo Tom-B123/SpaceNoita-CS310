@@ -46,6 +46,7 @@ __kernel void process(__global char* data,int iteration,
 
     int index = get_global_id(0);
 
+
     if (spawners[index] > 0) {
         if (data[index] == MATERIAL_AIR) {
             data[index] = spawners[index];
@@ -56,24 +57,34 @@ __kernel void process(__global char* data,int iteration,
     int x = index % ((width + 1)/n_width);
     int y = index / ((width + 1)/n_height);
 
-
-    /* char type = (char)spawners[0]; */
-    /* int s_x = spawners[1]; */
-    /* int s_y = spawners[2]; */
-    /**/
-    /* if (x == s_x && y == s_y) { */
-    /*     data[s_y * width + s_x] = type; */
-    /*     return; */
-    /* } */
-
-    bool left_priority = ((iteration << 3) % 13)+1 >= (iteration + (x + y) << 5) % 17;
+    bool left_priority = ((iteration << 3) % 13)+1 >= (iteration + ((x + y) << 5)) % 17;
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
-    int index1 = y * width + x;
-    int index2 = y * width + (x+1) % width;
-    int index3 = (((y+1)%height) * width) + x;
-    int index4 = (((y+1)%height) * width) + (x+1) % width;
+    int direction = 0;
+
+    int indicies[] = {
+        y * width + x,                          // [' ]
+        y * width + (x+1) % width,              // [ ']
+        (((y+1)%height) * width) + x,           // [. ]
+        (((y+1)%height) * width) + (x+1) % width// [ .]
+    };
+    int orderings[] = {
+        //N:
+        0,1,2,3,
+        //E:
+        1,3,0,2,
+        //S:
+        3,2,1,0,
+        //W:
+        2,0,3,1,
+    };
+
+    
+    int index1 = indicies[orderings[4 * direction + 0]];
+    int index2 = indicies[orderings[4 * direction + 1]];
+    int index3 = indicies[orderings[4 * direction + 2]];
+    int index4 = indicies[orderings[4 * direction + 3]];
     
     int properties1 = material_properties[data[index1]];
     int properties2 = material_properties[data[index2]];
@@ -90,7 +101,8 @@ __kernel void process(__global char* data,int iteration,
 
     // Compare [' ] and [. ]
     if (
-        index1 < index3 && 
+        x>=0 && x + 1 < width - 1 &&
+        y >= 0 && y + 1 < height - 1 && 
         properties1 & PROPERTY_POWDER && 
         !(properties3 & PROPERTY_SOLID) && 
         weight1 > weight3
@@ -102,7 +114,8 @@ __kernel void process(__global char* data,int iteration,
     }
     // Compare [ '] and [ .]
     if (
-        index2 < index4 && 
+        x>=0 && x + 1 < width - 1 &&
+        y >= 0 && y + 1 < height - 1 && 
         properties2 & PROPERTY_POWDER && 
         !(properties4 & PROPERTY_SOLID) && 
         weight2 > weight4
@@ -117,7 +130,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [' ] and [ .]
-                index1 < index4 && 
+                x>= 0 && x+1 < width-1 && 
+                y >= 0 && y + 1 < height - 1 && 
                 properties1 & PROPERTY_POWDER && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight1 > weight4,
@@ -130,7 +144,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [. ] and [ ']
-                index2 < index3 && 
+                x >= 0 && x+1< width - 1 && 
+                y >= 0 && y + 1 < height - 1 && 
                 properties2 & PROPERTY_POWDER && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight2 > weight3,
@@ -144,7 +159,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [' ] and [ ']
-                index1 < index2 && 
+                x >= 0 && x + 1 < width - 1 && 
+                y >= 0 && y + 1 < height - 1 && 
                 properties1 & PROPERTY_LIQUID && 
                 !(properties2 & PROPERTY_SOLID) && 
                 weight1 > weight2,
@@ -157,7 +173,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ '] and [' ]
-                index2 > index1 && 
+                x >= 0 && x + 1 < width - 1 && 
+                y >= 0 && y + 1 < height - 1 && 
                 properties2 & PROPERTY_LIQUID && 
                 !(properties1 & PROPERTY_SOLID) && 
                 weight2 > weight1,
@@ -170,7 +187,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [. ] and [ .]
-                index3 < index4 && 
+                x >= 0 && x + 1 < width - 1 && 
+                y >= 0 && y + 1 < height - 1 && 
                 properties3 & PROPERTY_LIQUID && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight3 > weight4,
@@ -183,7 +201,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ .] and [. ]
-                index4 > index3 && 
+                x >= 0 && x + 1 < width - 1 && 
+                y >= 0 && y + 1 < height - 1 && 
                 properties4 & PROPERTY_LIQUID && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight4 > weight3,
