@@ -192,6 +192,10 @@ class GameWindow {
         }
 
         bool is_open() {
+            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+                return false;
+            }
             return !glfwWindowShouldClose(window);
         }
 };

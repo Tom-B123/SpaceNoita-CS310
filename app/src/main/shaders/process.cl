@@ -40,6 +40,15 @@ bool choice_swap(bool do_swap, __global char* data,
     return false;
 }
 
+uint randint(int iteration, int x, int y) {
+    uint bit = 0;
+    for (int i = 0; i < 32; i++) {
+        bit = bit << 1;
+        bit |= ((iteration << 3) % 13)+1 >= (iteration + ((x * 31 + i + y * 37) << 5)) % 17;
+    }
+    return bit;
+}
+
 __kernel void process(__global char* data,int iteration, 
         int width, int height, int n_width, int n_height, 
         __global char* spawners){
@@ -51,13 +60,18 @@ __kernel void process(__global char* data,int iteration,
     // Y -> index divided by width
     int y = index / (width/n_height);
 
+    /* if (index == 0) { printf("Val: %u\n",randint(iteration,x,y)); } */
+    
+    bool left_priority = randint(iteration,x,y) % 2 == 0;
 
-    bool left_priority = ((iteration << 3) % 13)+1 >= (iteration + ((x + y) << 5)) % 17;
+    /* left_priority = left_priority && iteration%3 == 0; */
+
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
 
-    int direction = 3;
+    int direction = (randint(iteration,x,y) % 256) < ((iteration / 100) % 256);
+    direction    |= ((randint(iteration,x,y) % 256) < ((iteration / 200) % 256)) << 1;
 
     int indicies[] = {
         y * width + x,                          // [' ]
@@ -76,7 +90,6 @@ __kernel void process(__global char* data,int iteration,
         2,0,3,1,
     };
 
-    
     int index1 = indicies[orderings[4 * direction + 0]];
     int index2 = indicies[orderings[4 * direction + 1]];
     int index3 = indicies[orderings[4 * direction + 2]];
@@ -86,7 +99,6 @@ __kernel void process(__global char* data,int iteration,
         int tmp = x; x = y; y = tmp;
         tmp = width; width = height; height = tmp;
     }
-    
 
     if (spawners[index1] > 0) {
         if (data[index1] == MATERIAL_AIR) {
