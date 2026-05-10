@@ -93,9 +93,11 @@ class GameWindow {
                 }
 
                 // Define materials here
-                set_colour(' ',0.0,0.0,0.0);
+                set_colour(' ',0.2,0.2,0.2);
                 set_colour('S',1.0,1.0,0.0);
                 set_colour('W',0.0,0.0,1.0);
+                set_colour('O',0.0,0.0,0.0);
+                set_colour('R',0.5,0.5,0.5);
 
                 glUseProgram(shader_program);
 

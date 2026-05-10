@@ -14,7 +14,7 @@ int main_loop(CL cl_components,
 
 
     // Update n times per tick
-    int update_count = 1;
+    int update_count = 3;
 
     int iteration = 0;
 
@@ -32,6 +32,15 @@ int main_loop(CL cl_components,
     // Main loop, 
     //
 
+    for (int i = width / 6; i < 5 * width / 6; i+=2) {
+        buf[width * (height/2) + i] = 'R';
+        buf[width * (2+height/2) + i+1] = 'R';
+        buf[width * (4+height/2) + i] = 'R';
+        buf[width * (6+height/2) + i+1] = 'R';
+        buf[width * (8+height/2) + i] = 'R';
+        buf[width * (15+height/2) + i/2] = 'R';
+    }
+    cl_components.enqueueWriteBuffer(width, height, buf);
     int* count = new int[256];
     while (window.is_open()) {
 
@@ -55,8 +64,9 @@ int main_loop(CL cl_components,
             if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
         }
 
-        if (count['S'] < 500) buf[(width / 4) % width] = 'S';
-        if (count['W'] < 500) buf[((width / 2) + (width / 4)) % width] = 'W';
+        if (count['S'] < 5000) buf[(width / 4) % width] = 'S';
+        if (count['W'] < 5000) buf[((width / 2) + (width / 4)) % width] = 'W';
+        if (count['O'] < 5000) buf[width / 2] = 'O';
         cl_components.enqueueWriteBuffer(width, height, buf);
 
 

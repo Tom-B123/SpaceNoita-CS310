@@ -2,6 +2,7 @@
 #define MATERIAL_SAND  'S'
 #define MATERIAL_WATER 'W'
 #define MATERIAL_ROCK  'R'
+#define MATERIAL_OIL   'O'
 
 
 #define PROPERTY_POWDER  (1 << 0)
@@ -12,7 +13,8 @@ __constant uchar material_properties[256] = {
     0,
 
     [MATERIAL_SAND] = PROPERTY_POWDER,
-    [MATERIAL_WATER] = PROPERTY_LIQUID | PROPERTY_POWDER,
+    [MATERIAL_WATER]= PROPERTY_LIQUID | PROPERTY_POWDER,
+    [MATERIAL_OIL]  = PROPERTY_LIQUID | PROPERTY_POWDER,
     [MATERIAL_ROCK] = PROPERTY_SOLID,
 };
 __constant uchar material_weights[256] = {
@@ -21,6 +23,7 @@ __constant uchar material_weights[256] = {
     [MATERIAL_AIR]   = 128,
     [MATERIAL_SAND]  = 190,
     [MATERIAL_WATER] = 170,
+    [MATERIAL_OIL] = 150,
     [MATERIAL_ROCK]  = 255,
 };
 
