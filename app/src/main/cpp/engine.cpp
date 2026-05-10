@@ -9,7 +9,7 @@
  *  @param width the width of the world
  *  @param height the height of the world
  */
-char* init_buf(int width, int height) {
+char* init_buf(int width, int height,char default_val) {
     if (width % 2 == 1) width++;
     if (height % 2 == 1) height++;
 
@@ -18,7 +18,7 @@ char* init_buf(int width, int height) {
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            buf[i*width + j] = ' ';
+            buf[i*width + j] = default_val;
         }
     }
 
@@ -46,7 +46,7 @@ char* init_output_buf(int width, int height) {
 }
 void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
         int* iteration, int update_count, int width, int height, int n_width, int n_height,
-        char* buf, char* output_buf) {
+        char* buf, char* output_buf, int data_buffer) {
 
     if (width % 2 == 1) width++;
     if (height % 2 == 1) height++;
@@ -59,7 +59,7 @@ void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::
         *iteration = (*iteration) + 1;
     }
     // std::cout << "Before: " << buf << std::endl;
-    cl_components->enqueueReadBuffer(width, height,buf);
+    cl_components->enqueueReadBuffer(width, height,buf,data_buffer);
     // std::cout << "After: " << buf << std::endl;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {

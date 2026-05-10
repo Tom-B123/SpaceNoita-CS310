@@ -2,7 +2,6 @@
 #include "graphics.h"
 #include "cl_setup.h"
 #include "engine.h"
-#include "buffer.h"
 
 
 int main_loop(CL cl_components,
@@ -18,14 +17,20 @@ int main_loop(CL cl_components,
 
     int iteration = 0;
 
-    int* spawners = new int[]{'W',20,20,'\0'};
+    char* spawners = new char[width * height];
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            spawners[i * width + j] = 0;
+        }
+    }
+
     // Send data to the GPU.
-    cl_components.setBufferArg(0);
+    int data_buffer = cl_components.setArg(0,buf,width,height);
     cl_components.setArg(2, width);
     cl_components.setArg(3, height);
     cl_components.setArg(4, n_width);
     cl_components.setArg(5, n_height);
-    // cl_components.setArg(6, spawners);
+    int spawner_buffer = cl_components.setArg(6, spawners,width,height);
 
 
 
@@ -42,14 +47,22 @@ int main_loop(CL cl_components,
         buf[width * (8+height/2) + i] = 'R';
         buf[width * (15+height/2) + i/2] = 'R';
     }
-    cl_components.enqueueWriteBuffer(width, height, buf);
+
+    // spawners[(width / 4) % width] = 'S';
+    spawners[((width / 2) + (width / 4)) % width] = 'W';
+    spawners[width / 2] = 'O';
+    spawners[width / 3] = 'O';
+
+    cl_components.enqueueWriteBuffer(width, height, buf,data_buffer);
+    cl_components.enqueueWriteBuffer(width, height, spawners,spawner_buffer);
+
     // cl_components.enqueueWriteBuffer(4, 1, spawners);
     int* count = new int[256];
 
     while (window.is_open()) {
 
         update(&cl_components, &iteration, update_count, width, height, n_width, n_height,
-                buf,output_buf);
+                buf,output_buf,data_buffer);
 
         window.updateTexture(buf);
 
@@ -68,12 +81,6 @@ int main_loop(CL cl_components,
             if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
         }
 
-        // if (count['S'] < 5000) buf[(width / 4) % width] = 'S';
-        // if (count['W'] < 5000) buf[((width / 2) + (width / 4)) % width] = 'W';
-        // if (count['O'] < 5000) buf[width / 2] = 'O';
-        // cl_components.enqueueWriteBuffer(width, height, buf);
-
-
     }
 
     delete[](buf);
@@ -87,7 +94,7 @@ int main(){
 
     GameWindow window(WORLD_WIDTH,WORLD_HEIGHT,PIXEL_SCALE);
 
-    char* buf = init_buf(WORLD_WIDTH, WORLD_HEIGHT);
+    char* buf = init_buf(WORLD_WIDTH, WORLD_HEIGHT,' ');
     char* output_buf = init_output_buf(WORLD_WIDTH, WORLD_HEIGHT);
 
     CL cl_components(buf,WORLD_WIDTH,WORLD_HEIGHT);

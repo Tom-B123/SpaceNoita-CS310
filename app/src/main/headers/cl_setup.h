@@ -3,7 +3,8 @@
 // Functions to set up open CL.
 #include "app.h"
 #include "CL/opencl.hpp"
-
+#include <cstddef>
+#include <vector>
 std::string find_shader_file(std::string shader); 
 std::string get_shader_src(std::string shader); 
 
@@ -13,10 +14,10 @@ class CL {
         cl::Device device;
         cl::Kernel kernel;
         cl::CommandQueue commandQueue;
-        cl::Buffer mem_buffer;
         cl::Event taskFinished;
         cl::Context context;
         cl::Program program;
+        std::vector<cl::Buffer> mem_buffers;
 
     public:
         /**
@@ -82,8 +83,6 @@ class CL {
             cl::CommandQueue n_queue(context,device);
             commandQueue = n_queue;
 
-            cl::Buffer n_mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buf[0]),buf);
-            mem_buffer = n_mem_buffer;
 
             // Verify kernel exists
 
@@ -104,11 +103,19 @@ class CL {
             taskFinished = n_task_finished;
 
         }
-        void setBufferArg(int arg_n) {
+        /**
+         *  Creates a new buffer and returns its index.
+         */
+        int setArg(int arg_n,char* buffer,int width, int height) {
+
+            cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buffer[0]),buffer);
+            mem_buffers.push_back(mem_buffer);
+
             cl_int err = kernel.setArg(arg_n, mem_buffer);
             if (err != CL_SUCCESS) {
                 std::cout << "Failed to set kernel argument " << "mem buffer" << err << std::endl;
             }
+            return mem_buffers.size()-1;
         }
         void setArg(int arg_n, int value) {
             cl_int err = kernel.setArg(arg_n, value);
@@ -127,16 +134,16 @@ class CL {
             cl_int err = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&taskFinished);
             taskFinished.wait();
         }
-        void enqueueReadBuffer(int task_width, int task_height,char* buffer) {
-            commandQueue.enqueueReadBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
+        void enqueueReadBuffer(int task_width, int task_height,char* buffer,size_t buffer_index) {
+            commandQueue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
             taskFinished.wait();
         }
-        void enqueueWriteBuffer(int task_width, int task_height,char* buffer) {
-            commandQueue.enqueueWriteBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
+        void enqueueWriteBuffer(int task_width, int task_height,char* buffer, size_t buffer_index) {
+            commandQueue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
             taskFinished.wait();
         }
-        void enqueueWriteBuffer(int task_width, int task_height,int* buffer) {
-            commandQueue.enqueueWriteBuffer(mem_buffer, CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
+        void enqueueWriteBuffer(int task_width, int task_height,int* buffer,size_t buffer_index) {
+            commandQueue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
             taskFinished.wait();
         }
 };

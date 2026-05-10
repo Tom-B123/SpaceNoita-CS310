@@ -41,9 +41,15 @@ bool choice_swap(bool do_swap, __global char* data,
 }
 
 __kernel void process(__global char* data,int iteration, 
-        int width, int height, int n_width, int n_height){
+        int width, int height, int n_width, int n_height, 
+        __global char* spawners){
 
     int index = get_global_id(0);
+
+    if (spawners[index] > 0) {
+        data[index] = spawners[index];
+        return;
+    }
 
     int x = index % ((width + 1)/n_width);
     int y = index / ((width + 1)/n_height);
