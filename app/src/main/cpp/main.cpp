@@ -4,9 +4,9 @@
 #include "engine.h"
 
 
-int main_loop(CL cl_components,
+int main_loop(CL& cl_components,
         int width, int height, int n_width, int n_height,
-        char* buf, char* output_buf,GameWindow window) {
+        char* buf, char* output_buf,GameWindow& window) {
 
     // Tracks the simulation framerate
     FPSCount fps = FPSCount(120);
@@ -61,23 +61,15 @@ int main_loop(CL cl_components,
         window.draw();
 
         fps.nextFrame();
-    
-        // for (int i = 0; i < 256; i++) {
-        //     count[i] = 0;
-        // }
-        // for (int i = 0; i < width * height; i++) {
-        //     count[buf[i]] ++;
-        // }
-        // for (int i = 0; i < 256; i++) {
-        //     if (count[i] > 0) std::cout << (char)i << ": " << count[i] << std::endl;
-        // }
-
     }
+
+    Sleep(300);
 
     delete[](buf);
     delete[](output_buf);
     delete[](spawners);
     window.close();
+    // cl_components.free();
 
     return 0;
 }
@@ -93,7 +85,6 @@ int main(){
     
     int error = main_loop(cl_components,WORLD_WIDTH,WORLD_HEIGHT,2,2,
             buf,output_buf,window);
-
 
     return error;
 }

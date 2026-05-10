@@ -1,6 +1,7 @@
 #ifndef CL_SETUP_H
 #define CL_SETUP_H
 // Functions to set up open CL.
+#include "CL/cl.h"
 #include "app.h"
 #include "CL/opencl.hpp"
 #include <cstddef>
@@ -13,8 +14,8 @@ class CL {
         cl::Platform platform;
         cl::Device device;
         cl::Kernel kernel;
-        cl::CommandQueue commandQueue;
-        cl::Event taskFinished;
+        cl::CommandQueue command_queue;
+        cl::Event task_finished;
         cl::Context context;
         cl::Program program;
         std::vector<cl::Buffer> mem_buffers;
@@ -81,7 +82,7 @@ class CL {
 
             // Create the queue, input / output buffer and kernel
             cl::CommandQueue n_queue(context,device);
-            commandQueue = n_queue;
+            command_queue = n_queue;
 
 
             // Verify kernel exists
@@ -100,7 +101,7 @@ class CL {
                 exit(1);
             }
             cl::Event n_task_finished;
-            taskFinished = n_task_finished;
+            task_finished = n_task_finished;
 
         }
         /**
@@ -131,20 +132,31 @@ class CL {
         }
         void enqueueNDRangeKernel(int task_width, int task_height) {
 
-            cl_int err = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&taskFinished);
-            taskFinished.wait();
+            cl_int err = command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&task_finished);
+            task_finished.wait();
         }
         void enqueueReadBuffer(int task_width, int task_height,char* buffer,size_t buffer_index) {
-            commandQueue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
-            taskFinished.wait();
+            command_queue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+            task_finished.wait();
         }
         void enqueueWriteBuffer(int task_width, int task_height,char* buffer, size_t buffer_index) {
-            commandQueue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
-            taskFinished.wait();
+            command_queue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+            task_finished.wait();
         }
         void enqueueWriteBuffer(int task_width, int task_height,int* buffer,size_t buffer_index) {
-            commandQueue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&taskFinished);
-            taskFinished.wait();
+            command_queue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+            task_finished.wait();
+        }
+        void free() {
+            for (size_t i = 0; i < mem_buffers.size(); i++) {
+                clReleaseMemObject(mem_buffers.at(i).get());
+            }
+            clReleaseCommandQueue(command_queue.get());
+            clReleaseContext(context.get());
+            clReleaseDevice(device.get());
+            clReleaseEvent(task_finished.get());
+            clReleaseKernel(kernel.get());
+            clReleaseProgram(program.get());
         }
 };
 
