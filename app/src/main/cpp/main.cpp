@@ -13,7 +13,7 @@ int main_loop(CL cl_components,
 
 
     // Update n times per tick
-    int update_count = 50;
+    int update_count = 130;
 
     int iteration = 0;
 

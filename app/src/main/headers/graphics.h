@@ -33,7 +33,12 @@ class GameWindow {
                 glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
                 glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-                window = glfwCreateWindow((int)(width * pixel_scale), (int)(height * pixel_scale), "Sand Simulation", NULL, NULL);
+                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        
+                // Create fullscreen window
+                window = glfwCreateWindow(mode->width, mode->height, "Sand Simulation", monitor, NULL);
+
                 glfwMakeContextCurrent(window);
 
                 glewExperimental = GL_TRUE;
