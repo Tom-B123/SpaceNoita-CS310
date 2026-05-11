@@ -49,27 +49,6 @@ bool test_buffer_initialization() {
     return true;
 }
 
-// Test 2: Output buffer format
-bool test_output_buffer_format() {
-    int width = 4;
-    int height = 4;
-    
-    char* output_buf = init_output_buf(width, height);
-    int output_width = width + 3;
-    
-    // Check top border
-    TEST_ASSERT(output_buf[0] == '-', "Top border should be '-'");
-    TEST_ASSERT(output_buf[output_width - 1] == '\n', "Should end with newline");
-    
-    std::string text = "Left border should be '|', found\"\"";
-    // Check left border
-    TEST_ASSERT(output_buf[output_width] == '|', 
-            text.insert(text.size()-1,{output_buf[output_width + 1]}));
-    
-    
-    delete[] output_buf;
-    return true;
-}
 
 // Test3: Single particle falling. Makes sure it moves 1 cell down
 bool test_single_particle_falling() {
@@ -96,8 +75,6 @@ bool test_single_particle_falling_multiple() {
     char* buf = init_buf(width, height,' ');
     buf[0] = 'S';
     
-    char* output_buf = init_output_buf(width, height);
-    
     CL cl(buf, width, height);
     
     char* spawner = init_buf(width,height,0);
@@ -112,7 +89,7 @@ bool test_single_particle_falling_multiple() {
     int iteration = 0;
 
     
-    update(&cl, &iteration, 4, width, height, n_width, n_height, buf, output_buf,data_buffer);
+    update(&cl, &iteration, 4, width, height, n_width, n_height, buf,data_buffer);
     
 
     bool particle_moved = (buf[0] != 'S');
@@ -122,7 +99,6 @@ bool test_single_particle_falling_multiple() {
     // TEST_ASSERT(particle_in_correct_location, "Particle should have moved down 4 after 4 iteration");
     
     delete[] buf;
-    delete[] output_buf;
     return true;
 }
 
@@ -137,8 +113,6 @@ bool test_two_particles_falling() {
     buf[0] = 'S';
     buf[1] = 'S';
     
-    char* output_buf = init_output_buf(width, height);
-    
     CL cl(buf, width, height);
     
     char* spawner = init_buf(width,height,0);
@@ -153,7 +127,7 @@ bool test_two_particles_falling() {
     int iteration = 0;
 
     
-    update(&cl, &iteration, 1, width, height, n_width, n_height, buf, output_buf,data_buffer);
+    update(&cl, &iteration, 1, width, height, n_width, n_height, buf,data_buffer);
     
 
     bool particles_moved = (buf[0] != 'S' && buf[1] != 'S');
@@ -163,7 +137,6 @@ bool test_two_particles_falling() {
     TEST_ASSERT(particles_in_correct_location, "Particles should have moved down 1 after 1 iteration");
     
     delete[] buf;
-    delete[] output_buf;
     return true;
 }
 
@@ -178,8 +151,6 @@ bool test_two_particles_falling_multiple() {
     buf[0] = 'S';
     buf[1] = 'S';
     
-    char* output_buf = init_output_buf(width, height);
-    
     CL cl(buf, width, height);
     
     char* spawner = init_buf(width,height,0);
@@ -194,7 +165,7 @@ bool test_two_particles_falling_multiple() {
     int iteration = 0;
 
     
-    update(&cl, &iteration, 4, width, height, n_width, n_height, buf, output_buf,data_buffer);
+    update(&cl, &iteration, 4, width, height, n_width, n_height, buf,data_buffer);
     
 
     bool particles_moved = (buf[0] != 'S' && buf[1] != 'S');
@@ -204,7 +175,6 @@ bool test_two_particles_falling_multiple() {
     // TEST_ASSERT(particles_in_correct_location, "Particles should have moved down 4 after 4 iteration");
     
     delete[] buf;
-    delete[] output_buf;
     return true;
 }
 
@@ -214,8 +184,6 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     const int n_height = 2;
     
     char* buf = initial_state;
-    
-    char* output_buf = init_output_buf(width, height);
     
     CL cl(buf, width, height);
     
@@ -231,7 +199,7 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     int iteration = 0;
 
     
-    update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf, output_buf,data_buffer);
+    update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf,data_buffer);
     
     bool success = true;
 
@@ -246,7 +214,6 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     TEST_ASSERT(success, "Difference between calculated and expected states");
     
     delete[] buf;
-    delete[] output_buf;
     return true;
 }
 
@@ -415,7 +382,6 @@ int main() {
     std::cout << "========================================" << std::endl;
     //
     TEST_RUN((void*)test_buffer_initialization);
-    TEST_RUN((void*)test_output_buffer_format);
     TEST_RUN((void*)test_single_particle_falling);
     TEST_RUN((void*)test_single_particle_falling_multiple);
     TEST_RUN((void*)test_two_particles_falling);

@@ -14,7 +14,6 @@ char* init_buf(int width, int height,char default_val) {
     if (height % 2 == 1) height++;
 
     char* buf = new char[width * height]();
-    // draw(width,height,buf);
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
@@ -46,7 +45,7 @@ char* init_output_buf(int width, int height) {
 }
 void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
         int* iteration, int update_count, int width, int height, int n_width, int n_height,
-        char* buf, char* output_buf, int data_buffer) {
+        char* buf, int data_buffer) {
 
     if (width % 2 == 1) width++;
     if (height % 2 == 1) height++;
@@ -58,12 +57,5 @@ void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::
 
         *iteration = (*iteration) + 1;
     }
-    // std::cout << "Before: " << buf << std::endl;
     cl_components->enqueueReadBuffer(width, height,buf,data_buffer);
-    // std::cout << "After: " << buf << std::endl;
-    // for (int i = 0; i < height; i++) {
-    //     for (int j = 0; j < width; j++) {
-    //         output_buf[(i+1)*(width+3) + (j+1)] = buf[i*width + j];
-    //     }
-    // }
 }

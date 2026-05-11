@@ -130,6 +130,7 @@ class CL {
                 std::cout << "Failed to set kernel argument " << arg_n << err << std::endl;
             }
         }
+
         void enqueueNDRangeKernel(int task_width, int task_height) {
 
             cl_int err = command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&task_finished);

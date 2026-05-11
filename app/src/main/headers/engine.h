@@ -10,6 +10,6 @@ char* init_output_buf(int width, int height);
 
 void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
         int* iteration, int update_count, int width, int height, int n_width, int n_height,
-        char* buf, char* output_buf, int data_buffer);
+        char* buf, int data_buffer);
 
 #endif
