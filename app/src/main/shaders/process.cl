@@ -69,10 +69,12 @@ __kernel void process(__global char* data,int iteration,
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
-    int rotation_step = (iteration/10) % 360;
-    int rotation_direction = ((iteration/10) / 360) % 4;
+    int rotation_step = (iteration) % 3600;
+    int rotation_direction = ((iteration) / 3600) % 4;
 
-    int direction = (rotation_direction + (randint(iteration,x,y) % 360 < rotation_step)) % 4;
+    int direction = (rotation_direction + (randint(iteration,x,y) % 3600 < rotation_step)) % 4;
+
+    direction = 0;
 
     int indicies[] = {
         y * width + x,                          // [' ]

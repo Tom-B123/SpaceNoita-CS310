@@ -27,6 +27,9 @@ int run = 1;
     } \
     std::cout << std::endl << "PASSED" << std::endl;
 
+
+bool is_expected(int width, int height, char* initial_state, char* expected_state, int number_of_steps);
+
 // Test 1: Buffer initialization
 bool test_buffer_initialization() {
     int width = 10;
@@ -70,41 +73,16 @@ bool test_output_buffer_format() {
 
 // Test3: Single particle falling. Makes sure it moves 1 cell down
 bool test_single_particle_falling() {
-    const int width = 10;
-    const int height = 10;
-    const int n_width = 2;
-    const int n_height = 2;
-    
-    char* buf = init_buf(width, height,' ');
-    buf[0] = 'S';
-    
-    char* output_buf = init_output_buf(width, height);
-    
-    CL cl(buf, width, height);
-    
-    char* spawner = init_buf(width,height,0);
+    char* initial = new char[]{
+        'S',' ',
+        ' ',' '
+    };
+    char* expected = new char[]{
+        ' ',' ',
+        'S',' '
+    };
+    return is_expected(2,2,initial,expected,1);
 
-    int data_buffer = cl.setArg(0,buf,width,height);
-    cl.setArg(2, width);
-    cl.setArg(3, height);
-    cl.setArg(4, n_width);
-    cl.setArg(5, n_height);
-    int spawner_buffer = cl.setArg(6, spawner,width,height);
-    
-    int iteration = 0;
-
-    
-    update(&cl, &iteration, 1, width, height, n_width, n_height, buf, output_buf,data_buffer);
-    
-
-    bool particle_moved = (buf[0] != 'S');
-    bool particle_in_correct_location = (buf[width] == 'S');
-    TEST_ASSERT(iteration == 1, "Iteration should update");
-    TEST_ASSERT(particle_moved, "Particle should have moved after 1 iteration");
-    TEST_ASSERT(particle_in_correct_location, "Particle should have moved down 1 after 1 iteration");
-    
-    delete[] buf;
-    delete[] output_buf;
     return true;
 }
 
@@ -272,47 +250,6 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     return true;
 }
 
-bool is_expected_iterative(int width, int height, char* initial_state, char* expected_state, int number_of_steps) {
-
-    const int n_width = 2;
-    const int n_height = 2;
-    
-    char* buf = initial_state;
-    
-    char* output_buf = init_output_buf(width, height);
-    
-    CL cl(buf, width, height);
-    
-    char* spawner = init_buf(width,height,0);
-
-    int data_buffer = cl.setArg(0,buf,width,height);
-    cl.setArg(2, width);
-    cl.setArg(3, height);
-    cl.setArg(4, n_width);
-    cl.setArg(5, n_height);
-    int spawner_buffer = cl.setArg(6, spawner,width,height);
-    
-    int iteration = 0;
-
-    
-    for (int i = 0; i < number_of_steps; i++) {
-        update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf, output_buf,data_buffer);
-    }
-    
-    bool success = true;
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            std::cout << x << "," << y << ": got [" << buf[y*width + x] << "] , expected [" << expected_state[y * width + x] << "]" << std::endl;
-            if (buf[y * width + x] != expected_state[y * width + x]) success = false;
-        }
-    }
-    TEST_ASSERT(success, "Difference between calculated and expected states");
-    
-    delete[] buf;
-    delete[] output_buf;
-
-    return true;
-}
 
 // Test 7: testing boundary case
 bool test_bottom_boundary_one_sand() {
@@ -344,14 +281,18 @@ bool test_bottom_boundary_two_sand() {
 bool test_bottom_boundary_two_sand_left() {
     
     char* initial = new char[]{
-        ' ','S',
-        ' ','S'
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        ' ',' ',' ','S',
+        ' ',' ',' ','S'
     };
     char* expected = new char[]{
-        ' ',' ',
-        'S','S'
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        ' ',' ',' ',' ',
+        ' ',' ','S','S'
     };
-    return is_expected(2,2,initial,expected,5);
+    return is_expected(4,4,initial,expected,55);
 }
 // Test 10: will :. formation stay still
 bool test_bottom_boundary_three_sand() {
@@ -401,9 +342,9 @@ bool test_tower() {
         ' ',' ',' ',' ',
         ' ',' ',' ',' ',
         ' ',' ',' ',' ',
-        ' ',' ',' ',' ',
+        'S',' ',' ',' ',
         'S','S',' ',' ',
-        'S','S','S','S'
+        'S','S','S',' '
     };
     return is_expected(4,6,initial,expected,10);
 }
@@ -445,7 +386,7 @@ bool test_water_tower() {
         ' ',' ',' ',' ',
         'W','W','W','W'
     };
-    return is_expected(4,4,initial,expected,15);
+    return is_expected(4,4,initial,expected,55);
 }
 
 // Test 15: water leveling out

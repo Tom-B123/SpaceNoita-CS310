@@ -30,7 +30,7 @@ int main_loop(CL& cl_components,
     // Main loop, 
     //
 
-    int plinko_count = 10;
+    int plinko_count = 0;
     for (int j = 0; j < plinko_count; j++) {
         for (int i = width / 6; i < 5 * width / 6; i+=2) {
             buf[width * ((2*j) + height/2) + i + j%2] = 'R';
@@ -38,16 +38,18 @@ int main_loop(CL& cl_components,
         }
     }
 
+    buf[(height-1) * width + width-1] = 'S';
+    buf[(height-2) * width + width-1] = 'S';
+
     char materials[] = {'S','O','W'};
 
-    for (int i = 0; i < width; i+=50) {
-        spawners[(1 * height / 6) * width + i] = materials[(i/5) % 3];
-    }
+    // for (int i = width / 2; i < width; i+=width) {
+        // spawners[(3 * height / 6) * width + i] = materials[(i/5) % 3];
+    // }
 
     cl_components.enqueueWriteBuffer(width, height, buf,data_buffer);
     cl_components.enqueueWriteBuffer(width, height, spawners,spawner_buffer);
 
-    // cl_components.enqueueWriteBuffer(4, 1, spawners);
     int* count = new int[256];
 
     while (window.is_open()) {
@@ -63,12 +65,13 @@ int main_loop(CL& cl_components,
         fps.nextFrame();
     }
 
-    Sleep(300);
+    window.close();
+
+    Sleep(2000);
 
     delete[](buf);
     delete[](output_buf);
     delete[](spawners);
-    window.close();
     // cl_components.free();
 
     return 0;
