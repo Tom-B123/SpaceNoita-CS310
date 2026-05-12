@@ -1,4 +1,6 @@
 #include "buffer.h"
+#include "app.h"
+
 buffer init_buf(int width, int height,char default_val) {
     if (width % 2 == 1) width++;
     if (height % 2 == 1) height++;
@@ -20,3 +22,8 @@ buffer init_buf(int width, int height,char default_val) {
     return n_buffer;
 }
 
+void set_buffer(buffer buf, int x, int y,buffer_value data) {
+    size_t offset = (y * (buf.width) + x * BUFFER_RUN);
+
+    std::memcpy(buf.data + offset,&data,BUFFER_RUN);
+}

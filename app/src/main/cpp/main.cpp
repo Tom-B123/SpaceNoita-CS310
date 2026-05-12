@@ -64,7 +64,7 @@ int main_loop(CL& cl_components,int n_width, int n_height,
         window.refresh();
         window.draw();
 
-        buf.data[2] = 'S';
+        set_buffer(buf,3,0, {'S'} );
         cl_components.enqueueWriteBuffer(buf.width, buf.height, buf.data,data_buffer);
 
         fps.nextFrame();
