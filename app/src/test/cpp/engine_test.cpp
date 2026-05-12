@@ -8,6 +8,7 @@
 
 // Include your application headers
 #include "engine.h"
+#include "buffer.h"
 #include "cl_setup.h"
 #include "graphics.h"
 
@@ -35,17 +36,17 @@ bool test_buffer_initialization() {
     int width = 10;
     int height = 10;
     
-    char* buf = init_buf(width, height,' ');
+    buffer buf = init_buf(width, height,' ');
     
     // Check all cells are spaces
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            TEST_ASSERT(buf[i * width + j] == ' ', 
+            TEST_ASSERT(buf.data[i * width + j] == ' ', 
                        "Buffer cell should be space");
         }
     }
     
-    delete[] buf;
+    delete[] buf.data;
     return true;
 }
 
@@ -72,33 +73,33 @@ bool test_single_particle_falling_multiple() {
     const int n_width = 2;
     const int n_height = 2;
     
-    char* buf = init_buf(width, height,' ');
-    buf[0] = 'S';
+    buffer buf = init_buf(width, height,' ');
+    buf.data[0] = 'S';
     
-    CL cl(buf, width, height);
+    CL cl(buf);
     
-    char* spawner = init_buf(width,height,0);
+    buffer spawner = init_buf(width,height,0);
 
-    int data_buffer = cl.setArg(0,buf,width,height);
+    int data_buffer = cl.setArg(0,buf);
     cl.setArg(2, width);
     cl.setArg(3, height);
     cl.setArg(4, n_width);
     cl.setArg(5, n_height);
-    int spawner_buffer = cl.setArg(6, spawner,width,height);
+    int spawner_buffer = cl.setArg(6, spawner);
     
     int iteration = 0;
 
     
-    update(&cl, &iteration, 4, width, height, n_width, n_height, buf,data_buffer);
+    update(&cl, &iteration, 4, n_width, n_height, buf,data_buffer);
     
 
-    bool particle_moved = (buf[0] != 'S');
-    bool particle_in_correct_location = (buf[width * 4] == 'S');
+    bool particle_moved = (buf.data[0] != 'S');
+    bool particle_in_correct_location = (buf.data[width * 4] == 'S');
     TEST_ASSERT(iteration == 4, "Iteration should update");
     TEST_ASSERT(particle_moved, "Particle should have moved after 4 iterations");
     // TEST_ASSERT(particle_in_correct_location, "Particle should have moved down 4 after 4 iteration");
     
-    delete[] buf;
+    delete[] buf.data;
     return true;
 }
 
@@ -109,34 +110,34 @@ bool test_two_particles_falling() {
     const int n_width = 2;
     const int n_height = 2;
     
-    char* buf = init_buf(width, height,' ');
-    buf[0] = 'S';
-    buf[1] = 'S';
+    buffer buf = init_buf(width, height,' ');
+    buf.data[0] = 'S';
+    buf.data[1] = 'S';
     
-    CL cl(buf, width, height);
+    CL cl(buf);
     
-    char* spawner = init_buf(width,height,0);
+    buffer spawner = init_buf(width,height,0);
 
-    int data_buffer = cl.setArg(0,buf,width,height);
+    int data_buffer = cl.setArg(0,buf);
     cl.setArg(2, width);
     cl.setArg(3, height);
     cl.setArg(4, n_width);
     cl.setArg(5, n_height);
-    int spawner_buffer = cl.setArg(6, spawner,width,height);
+    int spawner_buffer = cl.setArg(6, spawner);
     
     int iteration = 0;
 
     
-    update(&cl, &iteration, 1, width, height, n_width, n_height, buf,data_buffer);
+    update(&cl, &iteration, 1, n_width, n_height, buf,data_buffer);
     
 
-    bool particles_moved = (buf[0] != 'S' && buf[1] != 'S');
-    bool particles_in_correct_location = (buf[width] == 'S' && buf[width+1] == 'S');
+    bool particles_moved = (buf.data[0] != 'S' && buf.data[1] != 'S');
+    bool particles_in_correct_location = (buf.data[width] == 'S' && buf.data[width+1] == 'S');
     TEST_ASSERT(iteration == 1, "Iteration should update");
     TEST_ASSERT(particles_moved, "Particles should have moved after 1 iteration");
     TEST_ASSERT(particles_in_correct_location, "Particles should have moved down 1 after 1 iteration");
     
-    delete[] buf;
+    delete[] buf.data;
     return true;
 }
 
@@ -147,34 +148,34 @@ bool test_two_particles_falling_multiple() {
     const int n_width = 2;
     const int n_height = 2;
     
-    char* buf = init_buf(width, height,' ');
-    buf[0] = 'S';
-    buf[1] = 'S';
+    buffer buf = init_buf(width, height,' ');
+    buf.data[0] = 'S';
+    buf.data[1] = 'S';
     
-    CL cl(buf, width, height);
+    CL cl(buf);
     
-    char* spawner = init_buf(width,height,0);
+    buffer spawner = init_buf(width,height,0);
 
-    int data_buffer = cl.setArg(0,buf,width,height);
+    int data_buffer = cl.setArg(0,buf);
     cl.setArg(2, width);
     cl.setArg(3, height);
     cl.setArg(4, n_width);
     cl.setArg(5, n_height);
-    int spawner_buffer = cl.setArg(6, spawner,width,height);
+    int spawner_buffer = cl.setArg(6, spawner);
     
     int iteration = 0;
 
     
-    update(&cl, &iteration, 4, width, height, n_width, n_height, buf,data_buffer);
+    update(&cl, &iteration, 4, n_width, n_height, buf,data_buffer);
     
 
-    bool particles_moved = (buf[0] != 'S' && buf[1] != 'S');
-    bool particles_in_correct_location = (buf[width*4] == 'S' && buf[(width*4)+1] == 'S');
+    bool particles_moved = (buf.data[0] != 'S' && buf.data[1] != 'S');
+    bool particles_in_correct_location = (buf.data[width*4] == 'S' && buf.data[(width*4)+1] == 'S');
     TEST_ASSERT(iteration == 4, "Iteration should update");
     TEST_ASSERT(particles_moved, "Particles should have moved after 4 iterations");
     // TEST_ASSERT(particles_in_correct_location, "Particles should have moved down 4 after 4 iteration");
     
-    delete[] buf;
+    delete[] buf.data;
     return true;
 }
 
@@ -183,37 +184,41 @@ bool is_expected(int width, int height, char* initial_state, char* expected_stat
     const int n_width = 2;
     const int n_height = 2;
     
-    char* buf = initial_state;
+    buffer buf = {
+        width,
+        height,
+        initial_state
+    };
     
-    CL cl(buf, width, height);
+    CL cl(buf);
     
-    char* spawner = init_buf(width,height, 0);
+    buffer spawner = init_buf(width,height, 0);
 
-    int data_buffer = cl.setArg(0,buf,width,height);
+    int data_buffer = cl.setArg(0,buf);
     cl.setArg(2, width);
     cl.setArg(3, height);
     cl.setArg(4, n_width);
     cl.setArg(5, n_height);
-    int spawner_buffer = cl.setArg(6, spawner,width,height);
+    int spawner_buffer = cl.setArg(6, spawner);
     
     int iteration = 0;
 
     
-    update(&cl, &iteration, number_of_steps, width, height, n_width, n_height, buf,data_buffer);
+    update(&cl, &iteration, number_of_steps, n_width, n_height, buf,data_buffer);
     
     bool success = true;
 
     std::cout << std::endl;     
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            std::cout << "A [" << buf[y*width + x] << "] E [" << expected_state[y * width + x] << "]";
-            if (buf[y * width + x] != expected_state[y * width + x]) success = false;
+            std::cout << "A [" << buf.data[y*width + x] << "] E [" << expected_state[y * width + x] << "]";
+            if (buf.data[y * width + x] != expected_state[y * width + x]) success = false;
         }
         std::cout << std::endl;
     }
     TEST_ASSERT(success, "Difference between calculated and expected states");
     
-    delete[] buf;
+    delete[] buf.data;
     return true;
 }
 
@@ -339,7 +344,7 @@ bool test_two_towers() {
 }
 // Test 14: water leveling out
 bool test_water_tower() {
-    char* initial;
+    char* initial; 
     char* expected;
     initial = new char[]{
         'W',' ',' ',' ',

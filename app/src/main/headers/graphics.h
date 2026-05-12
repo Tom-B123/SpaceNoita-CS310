@@ -63,7 +63,6 @@ class GameWindow {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glBindTexture(GL_TEXTURE_2D, 0);
 
-
                 vertexShaderSource = get_shader_src("vertex.vert");
                 fragmentShaderSource = get_shader_src("fragment.frag");
                 // Compile shaders with error checking
@@ -106,14 +105,12 @@ class GameWindow {
 
                 glUseProgram(shader_program);
 
-                // Now set the uniform
                 GLint coloursLoc = glGetUniformLocation(shader_program, "colours");
                 if (coloursLoc == -1) {
                     fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
                 } else {
                     glUniform1fv(coloursLoc, 256 * 3, colours);
                 } 
-                // Create vertex data for a full-screen quad
                 float vertices[] = {
                     // positions   // texture coords
                     -1.0f,  1.0f,  0.0f, 0.0f,  // top-left

@@ -4,12 +4,9 @@
 #include "app.h"
 #include "cl_setup.h"
 
-char* init_buf(int width, int height,char default_val);
-char* init_output_buf(int width, int height);
-
 
 void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
-        int* iteration, int update_count, int width, int height, int n_width, int n_height,
-        char* buf, int data_buffer);
+        int* iteration, int update_count, int n_width, int n_height,
+        buffer buf, int data_buffer);
 
 #endif

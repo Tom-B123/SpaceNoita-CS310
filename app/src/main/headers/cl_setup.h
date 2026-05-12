@@ -4,6 +4,7 @@
 #include "CL/cl.h"
 #include "app.h"
 #include "CL/opencl.hpp"
+#include "buffer.h"
 #include <cstddef>
 #include <vector>
 std::string find_shader_file(std::string shader); 
@@ -24,9 +25,7 @@ class CL {
         /**
          *  Initialise OpenCL: 
          */
-        CL(char* buf,int width, int height) {
-            if (width%2 == 1) width++;
-            if (height%2 == 1) height++;
+        CL(buffer buf) {
             /**
              * Search for all the OpenCL platforms available and check
              * if there are any.
@@ -107,9 +106,9 @@ class CL {
         /**
          *  Creates a new buffer and returns its index.
          */
-        int setArg(int arg_n,char* buffer,int width, int height) {
+        int setArg(int arg_n,buffer buf) {
 
-            cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, width * height * sizeof(buffer[0]),buffer);
+            cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, buf.width * buf.height * sizeof(buf.data[0]),buf.data);
             mem_buffers.push_back(mem_buffer);
 
             cl_int err = kernel.setArg(arg_n, mem_buffer);
