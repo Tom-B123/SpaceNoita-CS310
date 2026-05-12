@@ -10,6 +10,8 @@ struct buffer {
 };
 
 struct buffer_value {
+    char x;
+    char y;
     char material;
 };
 
@@ -18,6 +20,8 @@ struct buffer_value {
 
 buffer init_buf(int width, int height,char default_val);
 
-void set_buffer(buffer buf, int x, int y,struct buffer_value data);
+void set_buffer(buffer buf, int x, int y,buffer_value data);
+buffer_value get_buffer(buffer buf, int x, int y);
+
 
 #endif

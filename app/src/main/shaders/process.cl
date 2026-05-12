@@ -9,6 +9,28 @@
 #define PROPERTY_LIQUID  (1 << 1) 
 #define PROPERTY_SOLID   (1 << 2)
 
+
+typedef struct {
+    char x;
+    char y;
+    char material;
+}   buffer_value;
+
+#define BUFFER_RUN sizeof(buffer_value)
+
+void set_buffer(__global char* data, int index, buffer_value value) {
+    size_t offset = (index * BUFFER_RUN);
+
+    ((__global buffer_value* )data)[index] = value;
+}
+
+buffer_value get_buffer(__global char* data, int index) {
+    int offset = (index * BUFFER_RUN);
+
+    __global buffer_value* v = ((__global buffer_value*)(data + offset));
+    return *v;
+}
+
 __constant uchar material_properties[256] = {
     0,
 
@@ -30,11 +52,11 @@ __constant uchar material_weights[256] = {
 
 bool choice_swap(bool do_swap, __global char* data, 
     bool cond, int i1, int i2) {
-    char tmp;
+    buffer_value tmp;
     if (do_swap && cond) {
-        tmp = data[i1];
-        data[i1] = data[i2];
-        data[i2] = tmp;
+        tmp = get_buffer(data,i1);
+        set_buffer(data,i1,get_buffer(data,i2));
+        set_buffer(data,i2,tmp);
         return true;
     }
     return false;
@@ -103,68 +125,107 @@ __kernel void process(__global char* data,int iteration,
         tmp = width; width = height; height = tmp;
     }
 
-    if (spawners[index1] > 0) {
-        if (data[index1] == MATERIAL_AIR) {
-            data[index1] = spawners[index1];
-            return;
-        }
+    /* if (spawners[index1] > 0) { */
+    /*     if (data[index1] == MATERIAL_AIR) { */
+    /*         data[index1] = spawners[index1]; */
+    /*         return; */
+    /*     } */
+    /* } */
+    /* if (spawners[index2] > 0) { */
+    /*     if (data[index2] == MATERIAL_AIR) { */
+    /*         data[index2] = spawners[index2]; */
+    /*         return; */
+    /*     } */
+    /* } */
+    /* if (spawners[index3] > 0) { */
+    /*     if (data[index3] == MATERIAL_AIR) { */
+    /*         data[index3] = spawners[index3]; */
+    /*         return; */
+    /*     } */
+    /* } */
+    /* if (spawners[index4] > 0) { */
+    /*     if (data[index4] == MATERIAL_AIR) { */
+    /*         data[index4] = spawners[index4]; */
+    /*         return; */
+    /*     } */
+    /* } */
+
+    int properties1 = material_properties[get_buffer(data,index1).material];
+    int properties2 = material_properties[get_buffer(data,index2).material];
+    int properties3 = material_properties[get_buffer(data,index3).material];
+    int properties4 = material_properties[get_buffer(data,index4).material];
+
+    int weight1 = material_weights[get_buffer(data,index1).material];
+    int weight2 = material_weights[get_buffer(data,index2).material];
+    int weight3 = material_weights[get_buffer(data,index3).material];
+    int weight4 = material_weights[get_buffer(data,index4).material];
+
+    if (get_buffer(data,index1).material == MATERIAL_SAND) {
+        printf("Sand at %i (i1)",index1);
     }
-    if (spawners[index2] > 0) {
-        if (data[index2] == MATERIAL_AIR) {
-            data[index2] = spawners[index2];
-            return;
-        }
+    if (get_buffer(data,index2).material == MATERIAL_SAND) {
+        printf("Sand at %i (i2)",index2);
     }
-    if (spawners[index3] > 0) {
-        if (data[index3] == MATERIAL_AIR) {
-            data[index3] = spawners[index3];
-            return;
-        }
+    if (get_buffer(data,index3).material == MATERIAL_SAND) {
+        printf("Sand at %i (i3)",index3);
     }
-    if (spawners[index4] > 0) {
-        if (data[index4] == MATERIAL_AIR) {
-            data[index4] = spawners[index4];
-            return;
-        }
+    if (get_buffer(data,index4).material == MATERIAL_SAND) {
+        printf("Sand at %i (i4)",index4);
     }
 
-    int properties1 = material_properties[data[index1]];
-    int properties2 = material_properties[data[index2]];
-    int properties3 = material_properties[data[index3]];
-    int properties4 = material_properties[data[index4]];
-
-    int weight1 = material_weights[data[index1]];
-    int weight2 = material_weights[data[index2]];
-    int weight3 = material_weights[data[index3]];
-    int weight4 = material_weights[data[index4]];
+    return;
 
     char tmp;
     bool moved = false;
 
     // Compare [' ] and [. ]
-    if (
-        y < height - 1 && y >= 0 &&
-        properties1 & PROPERTY_POWDER && 
-        !(properties3 & PROPERTY_SOLID) && 
-        weight1 > weight3
-       ){
-        tmp = data[index1];
-        data[index1] = data[index3];
-        data[index3] = tmp;
-        moved = true;
-    }
+    moved |=choice_swap(
+            true,
+            data,
+            // Compare [. ] and [ ']
+            y < height - 1 && y >= 0 &&
+            properties1 & PROPERTY_POWDER && 
+            !(properties3 & PROPERTY_SOLID) && 
+            weight1 > weight3,
+            index1,
+            index3
+    );
+    /* if ( */
+    /*     y < height - 1 && y >= 0 && */
+    /*     properties1 & PROPERTY_POWDER &&  */
+    /*     !(properties3 & PROPERTY_SOLID) &&  */
+    /*     weight1 > weight3 */
+    /*    ){ */
+    /*     tmp = data[index1]; */
+    /*     data[index1] = data[index3]; */
+    /*     data[index3] = tmp; */
+    /*      set_buffer(data,index1,get_buffer(data,index3)); */ 
+    /*      set_buffer(data,index3, tmp); */ 
+    /*     moved = true; */
+    /* } */
     // Compare [ '] and [ .]
-    if (
-        y  < height - 1 && y >= 0 &&
-        properties2 & PROPERTY_POWDER && 
-        !(properties4 & PROPERTY_SOLID) && 
-        weight2 > weight4
-       ){
-        tmp = data[index2];
-        data[index2] = data[index4];
-        data[index4] = tmp;
-        moved = true;
-    }
+    moved |=choice_swap(
+            true,
+            data,
+            // Compare [. ] and [ ']
+            y < height - 1 && y >= 0 &&
+            properties2 & PROPERTY_POWDER && 
+            !(properties4 & PROPERTY_SOLID) && 
+            weight2 > weight4,
+            index2,
+            index4
+    );
+    /* if ( */
+    /*     y  < height - 1 && y >= 0 && */
+    /*     properties2 & PROPERTY_POWDER &&  */
+    /*     !(properties4 & PROPERTY_SOLID) &&  */
+    /*     weight2 > weight4 */
+    /*    ){ */
+    /*     tmp = data[index2]; */
+    /*     data[index2] = data[index4]; */
+    /*     data[index4] = tmp; */
+    /*     moved = true; */
+    /* } */
     if (!moved) {
         moved |= choice_swap(
                 left_priority,
