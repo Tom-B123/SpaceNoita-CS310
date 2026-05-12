@@ -17,9 +17,7 @@ class Chunk {
         // Size of chunks, e.g. 16x16 or 64x64 pixels
         int size = 64;
     public:
-        Chunk() {
-
-        }
+        Chunk();
 };
 
 #endif

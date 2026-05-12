@@ -8,7 +8,7 @@
 
 int main(){
 
-    GameWindow window(WORLD_WIDTH,WORLD_HEIGHT,PIXEL_SCALE);
+    GameWindow window(WORLD_WIDTH,WORLD_HEIGHT);
 
     buffer buf = init_buf(WORLD_WIDTH, WORLD_HEIGHT,' ');
 
