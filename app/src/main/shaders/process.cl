@@ -71,6 +71,14 @@ uint randint(int iteration, int x, int y) {
     return bit;
 }
 
+__kernel void render(__global char* data, __global char* render_buffer) {
+    int index = get_global_id(0);
+
+    buffer_value val = get_buffer(data,index);
+
+    render_buffer[index] = val.material;
+}
+
 __kernel void process(__global char* data,int iteration, 
         int width, int height, int n_width, int n_height, 
         __global char* spawners){
@@ -159,21 +167,6 @@ __kernel void process(__global char* data,int iteration,
     int weight2 = material_weights[get_buffer(data,index2).material];
     int weight3 = material_weights[get_buffer(data,index3).material];
     int weight4 = material_weights[get_buffer(data,index4).material];
-
-    if (get_buffer(data,index1).material == MATERIAL_SAND) {
-        printf("Sand at %i (i1)",index1);
-    }
-    if (get_buffer(data,index2).material == MATERIAL_SAND) {
-        printf("Sand at %i (i2)",index2);
-    }
-    if (get_buffer(data,index3).material == MATERIAL_SAND) {
-        printf("Sand at %i (i3)",index3);
-    }
-    if (get_buffer(data,index4).material == MATERIAL_SAND) {
-        printf("Sand at %i (i4)",index4);
-    }
-
-    return;
 
     char tmp;
     bool moved = false;

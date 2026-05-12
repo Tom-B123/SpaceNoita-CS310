@@ -14,7 +14,8 @@ class CL {
     private:
         cl::Platform platform;
         cl::Device device;
-        cl::Kernel kernel;
+        cl::Kernel process_kernel;
+        cl::Kernel render_kernel;
         cl::CommandQueue command_queue;
         cl::Event task_finished;
         cl::Context context;
@@ -73,11 +74,7 @@ class CL {
             program = n_program;
 
             auto err = program.build();
-            if(err != CL_BUILD_SUCCESS){
-                std::cerr << "Build Status: " << program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(device) 
-                    << "Build Log:\t " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << std::endl;
-                exit(1);
-            }
+            check_error(err,"Failed to build program!");
 
             // Create the queue, input / output buffer and kernel
             cl::CommandQueue n_queue(context,device);
@@ -86,22 +83,21 @@ class CL {
 
             // Verify kernel exists
 
-            kernel = cl::Kernel(program, "process", &err);
-            if (err != CL_SUCCESS) {
-                std::cerr << "Failed to create kernel 'helloWorld'! Error: " << err << std::endl;
-
-                // List available kernels for debugging
-                std::vector<cl::Kernel> kernels;
-                program.createKernels(&kernels);
-                std::cout << "Available kernels in program: " << kernels.size() << std::endl;
-                for (auto& k : kernels) {
-                    std::cout << "  - " << k.getInfo<CL_KERNEL_FUNCTION_NAME>() << std::endl;
-                }
-                exit(1);
-            }
+            process_kernel = cl::Kernel(program, "process", &err);
+            check_error(err, "Failed to create the 'process' kernel!");
+            render_kernel = cl::Kernel(program, "render", &err);
+            check_error(err, "Failed to create the 'render' kernel!");
+                
             cl::Event n_task_finished;
             task_finished = n_task_finished;
 
+        }
+
+        void check_error(cl_int err, std::string message) {
+            if (err != CL_SUCCESS) {
+                std::cerr << message << " Error code: " << err << std::endl;
+                exit(1);
+            }
         }
         /**
          *  Creates a new buffer and returns its index.
@@ -111,30 +107,21 @@ class CL {
             cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, buf.width * buf.height * sizeof(buf.data[0]),buf.data);
             mem_buffers.push_back(mem_buffer);
 
-            cl_int err = kernel.setArg(arg_n, mem_buffer);
-            if (err != CL_SUCCESS) {
-                std::cout << "Failed to set kernel argument " << "mem buffer" << err << std::endl;
-            }
+            cl_int err = process_kernel.setArg(arg_n, mem_buffer);
+            check_error(err, "Failed to set buffer kernel argument!");
+
             return mem_buffers.size()-1;
         }
         void setArg(int arg_n, int value) {
-            cl_int err = kernel.setArg(arg_n, value);
-            if (err != CL_SUCCESS) {
-                std::cout << "Failed to set kernel argument " << arg_n << err << std::endl;
-            }
-        }
-        void setArg(int arg_n, int* value) {
-            cl_int err = kernel.setArg(arg_n, value);
-            if (err != CL_SUCCESS) {
-                std::cout << "Failed to set kernel argument " << arg_n << err << std::endl;
-            }
+            cl_int err = process_kernel.setArg(arg_n, value);
+            check_error(err, "Failed to set integer kernel argument!");
         }
 
         void enqueueNDRangeKernel(int task_width, int task_height) {
-
-            cl_int err = command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height * BUFFER_RUN), cl::NullRange,nullptr,&task_finished);
+            cl_int err = command_queue.enqueueNDRangeKernel(process_kernel, cl::NullRange, cl::NDRange(task_width * task_height * BUFFER_RUN), cl::NullRange,nullptr,&task_finished);
             task_finished.wait();
         }
+
         void enqueueReadBuffer(int task_width, int task_height,char* buffer,size_t buffer_index) {
             command_queue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
             task_finished.wait();
@@ -155,7 +142,8 @@ class CL {
             clReleaseContext(context.get());
             clReleaseDevice(device.get());
             clReleaseEvent(task_finished.get());
-            clReleaseKernel(kernel.get());
+            clReleaseKernel(process_kernel.get());
+            clReleaseKernel(render_kernel.get());
             clReleaseProgram(program.get());
         }
 };
