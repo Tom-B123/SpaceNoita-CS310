@@ -38,13 +38,13 @@ int Engine::main_loop() {
     int iteration = 0;
 
     // Set Process kernel arguments
-    cl->setArg(5, render_buf.width,cl->process_kernel);
-    cl->setArg(6, render_buf.height,cl->process_kernel);
-    cl->setArg(7, n_width,cl->process_kernel);
-    cl->setArg(8, n_height,cl->process_kernel);
+    cl->setArg(2, render_buf.width,cl->process_kernel);
+    cl->setArg(3, render_buf.height,cl->process_kernel);
+    cl->setArg(4, n_width,cl->process_kernel);
+    cl->setArg(5, n_height,cl->process_kernel);
 
     // Set Render kernel arguments
-    cl->setArg(4, render_buf.width,cl->render_kernel);
+    cl->setArg(4, render_buf.width * BUFFER_RUN,cl->render_kernel);
     cl->setArg(5, render_buf.height,cl->render_kernel);
 
     // Main loop, 

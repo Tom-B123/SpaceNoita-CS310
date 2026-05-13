@@ -19,6 +19,7 @@ class ChunkManager {
 
         // The buffer that the world is rendered to
         buffer render_buffer;
+        int render_buffer_index;
         // Size of chunks, e.g. 16x16 or 64x64 pixels
         int chunk_size = 64;
 
@@ -32,7 +33,7 @@ class ChunkManager {
 
         // Write a chunk's data to the render_buffer, 
         // based on the camera offset.
-        void render_chunk(CL* cl,int render_buffer_index);
+        void render_chunk(CL* cl);
 
         // Update a chunk's data, using it's update list and max speed to 
         // decide what to update, when.

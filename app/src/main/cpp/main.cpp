@@ -18,7 +18,5 @@ int main(){
     
     int error = engine.main_loop();
 
-    // return error;
-    //
-    return 0;
+    return error;
 }

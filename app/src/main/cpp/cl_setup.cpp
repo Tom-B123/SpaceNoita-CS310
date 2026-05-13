@@ -1,4 +1,5 @@
 #include "cl_setup.h"
+#include "buffer.h"
 
 
 CL::CL(buffer buf) {
@@ -78,7 +79,15 @@ void CL::check_error(cl_int err, std::string message) {
 }
 
 int CL::makeBuffer(buffer buf) {
-    cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, buf.width * buf.height * sizeof(buf.data[0]),buf.data);
+    cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, BUFFER_RUN * buf.width * buf.height * sizeof(buf.data[0]) ,buf.data);
+    mem_buffers.push_back(mem_buffer);
+
+    std::cout << "Created memory buffer: " << mem_buffers.size() << " of size " << buf.width * buf.height * sizeof(buf.data[0]) << std::endl;
+
+    return mem_buffers.size() - 1;
+}
+int CL::makeRenderBuffer(buffer buf) {
+    cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,buf.width * buf.height * sizeof(buf.data[0]) ,buf.data);
     mem_buffers.push_back(mem_buffer);
 
     std::cout << "Created memory buffer: " << mem_buffers.size() << " of size " << buf.width * buf.height * sizeof(buf.data[0]) << std::endl;
@@ -104,13 +113,22 @@ void CL::enqueueKernel(int task_width, int task_height,cl::Kernel kernel) {
     task_finished.wait();
 }
 void CL::enqueueReadBuffer(int task_width, int task_height, char* buffer, size_t buffer_index) {
-    command_queue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+    command_queue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0,BUFFER_RUN * task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
     task_finished.wait();
 }
 void CL::enqueueWriteBuffer(int task_width, int task_height, char* buffer, size_t buffer_index) {
-    command_queue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+    command_queue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0,BUFFER_RUN * task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
     task_finished.wait();
 }
+void CL::enqueueRenderReadBuffer(int task_width, int task_height, char* buffer, size_t buffer_index) {
+    command_queue.enqueueReadBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0, task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+    task_finished.wait();
+}
+void CL::enqueueRenderWriteBuffer(int task_width, int task_height, char* buffer, size_t buffer_index) {
+    command_queue.enqueueWriteBuffer(mem_buffers.at(buffer_index), CL_TRUE, 0,task_width * task_height * sizeof(buffer[0]), buffer,nullptr,&task_finished);
+    task_finished.wait();
+}
+
 void CL::free() {
     std::cout  << "Releasing: " << mem_buffers.size() << " memory buffers!";
     for (size_t i = 0; i < mem_buffers.size(); i++) {

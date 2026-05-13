@@ -1,7 +1,10 @@
 #include "chunk.h"
 #include "buffer.h"
 
-Chunk::Chunk(int x, int y,int size, CL* cl) : chunk_x(x), chunk_y(y) {
+Chunk::Chunk(int x, int y,int size, CL* cl) : 
+    chunk_x(x), 
+    chunk_y(y) 
+{
     to_update = init_buf(size, size, ' ');
     to_update_count = 0;
 

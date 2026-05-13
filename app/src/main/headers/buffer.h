@@ -19,6 +19,7 @@ struct buffer_value {
 #define BUFFER_RUN sizeof(buffer_value)
 
 buffer init_buf(int width, int height,char default_val);
+buffer init_render_buf(int width, int height,char default_val);
 
 void set_buffer(buffer buf, int x, int y,buffer_value data);
 buffer_value get_buffer(buffer buf, int x, int y);

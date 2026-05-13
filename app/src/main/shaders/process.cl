@@ -71,26 +71,39 @@ uint randint(int iteration, int x, int y) {
     return bit;
 }
 
-__kernel void render(__global char* data, __global char* render_buffer) {
+__kernel void render(__global char* data, 
+    int chunk_x, int chunk_y, int chunk_size,
+    int width, int height,
+    __global char* render_buffer) 
+{
     int index = get_global_id(0);
+
+    /* if (index == 0) printf("kernel width: %i\n",width); */
 
     buffer_value val = get_buffer(data,index);
 
-    render_buffer[index] = val.material;
+    int x = index % chunk_size;
+    int y = index / chunk_size;
+
+    render_buffer[y * width + x] = val.material;
 }
 
 __kernel void process(__global char* data,int iteration, 
+        int chunk_x, int chunk_y, int chunk_size,
         int width, int height, int n_width, int n_height) {
 
     int index = get_global_id(0);
+    
+    /* if (index == 0) printf("chunk %i,%i with size %i\n",chunk_x,chunk_y,chunk_size); */
 
+    /* return; */
     /* buffer_value v = {0,0,'S'}; */
     /* set_buffer(data,index,v); */
 
     // X -> index wrapped around width
-    int x = index % (width/n_width);
+    int x = index % (chunk_size/n_width);
     // Y -> index divided by width
-    int y = index / (width/n_height);
+    int y = index / (chunk_size/n_height);
 
     /* if (index == 0) { printf("Val: %u\n",randint(iteration,x,y)); } */
     
@@ -101,6 +114,7 @@ __kernel void process(__global char* data,int iteration,
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
+
     int rotation_step = (iteration) % 3600;
     int rotation_direction = ((iteration) / 3600) % 4;
 
@@ -109,10 +123,10 @@ __kernel void process(__global char* data,int iteration,
     direction = 0;
 
     int indicies[] = {
-        y * width + x,                          // [' ]
-        y * width + (x+1) % width,              // [ ']
-        (((y+1)%height) * width) + x,           // [. ]
-        (((y+1)%height) * width) + (x+1) % width// [ .]
+        y * (width/2) + x,                          // [' ]
+        y * (width/2) + (x+1) % chunk_size,              // [ ']
+        (((y+1)%chunk_size) * (width/2)) + x,           // [. ]
+        (((y+1)%chunk_size) * (width/2)) + (x+1) % chunk_size// [ .]
     };
     int orderings[] = {
         //N:
@@ -129,6 +143,8 @@ __kernel void process(__global char* data,int iteration,
     int index2 = indicies[orderings[4 * direction + 1]];
     int index3 = indicies[orderings[4 * direction + 2]];
     int index4 = indicies[orderings[4 * direction + 3]];
+
+    int test = 0;
 
     if (direction == 3 || direction == 1) { 
         int tmp = x; x = y; y = tmp;
@@ -178,7 +194,7 @@ __kernel void process(__global char* data,int iteration,
             true,
             data,
             // Compare [. ] and [ ']
-            y < height - 1 && y >= 0 &&
+            y < chunk_size - 1 && y >= 0 &&
             properties1 & PROPERTY_POWDER && 
             !(properties3 & PROPERTY_SOLID) && 
             weight1 > weight3,
@@ -203,7 +219,7 @@ __kernel void process(__global char* data,int iteration,
             true,
             data,
             // Compare [. ] and [ ']
-            y < height - 1 && y >= 0 &&
+            y < chunk_size - 1 && y >= 0 &&
             properties2 & PROPERTY_POWDER && 
             !(properties4 & PROPERTY_SOLID) && 
             weight2 > weight4,
@@ -226,8 +242,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [' ] and [ .]
-                x < width-1 && 
-                y  < height - 1 && y >= 0 &&
+                x < chunk_size-1 && 
+                y  < chunk_size - 1 && y >= 0 &&
                 properties1 & PROPERTY_POWDER && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight1 > weight4,
@@ -240,8 +256,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [. ] and [ ']
-                x < width - 1 && 
-                y < height - 1 && y >= 0 &&
+                x < chunk_size - 1 && 
+                y < chunk_size - 1 && y >= 0 &&
                 properties2 & PROPERTY_POWDER && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight2 > weight3,
@@ -255,8 +271,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [' ] and [ ']
-                x < width - 1 && 
-                y < height - 1 && y >= 0 &&
+                x < chunk_size - 1 && 
+                y < chunk_size - 1 && y >= 0 &&
                 properties1 & PROPERTY_LIQUID && 
                 !(properties2 & PROPERTY_SOLID) && 
                 weight1 > weight2,
@@ -269,8 +285,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ '] and [' ]
-                x < width - 1 && 
-                y < height - 1 && y >= 0 &&
+                x < chunk_size - 1 && 
+                y < chunk_size - 1 && y >= 0 &&
                 properties2 & PROPERTY_LIQUID && 
                 !(properties1 & PROPERTY_SOLID) && 
                 weight2 > weight1,
@@ -283,8 +299,8 @@ __kernel void process(__global char* data,int iteration,
                 left_priority,
                 data,
                 // Compare [. ] and [ .]
-                x < width - 1 && 
-                y < height - 1 && 
+                x < chunk_size - 1 && 
+                y < chunk_size - 1 && 
                 properties3 & PROPERTY_LIQUID && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight3 > weight4,
@@ -297,8 +313,8 @@ __kernel void process(__global char* data,int iteration,
                 !left_priority,
                 data,
                 // Compare [ .] and [. ]
-                x < width - 1 && 
-                y >= 0 && y < height - 1 && 
+                x < chunk_size - 1 && 
+                y >= 0 && y < chunk_size - 1 && 
                 properties4 & PROPERTY_LIQUID && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight4 > weight3,

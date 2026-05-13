@@ -27,12 +27,20 @@ class CL {
 
         CL(buffer buf);
         void check_error(cl_int err, std::string message);
+        /**
+         *  Make a new CL::Buffer
+         *  @param buf the buffer struct containing the width, height and raw data
+         *  @param run the size of each buffer element. Defult is BUFFER_RUN
+         */
         int makeBuffer(buffer buf);
+        int makeRenderBuffer(buffer buf);
         void setArg(int arg_n,buffer buf,int buffer_index, cl::Kernel kernel);
         void setArg(int arg_n, int value,cl::Kernel kernel);
         void enqueueKernel(int task_width, int task_height,cl::Kernel kernel);
         void enqueueReadBuffer(int task_width, int task_height,char* buffer,size_t buffer_index);
         void enqueueWriteBuffer(int task_width, int task_height,char* buffer, size_t buffer_index);
+        void enqueueRenderReadBuffer(int task_width, int task_height, char* buffer, size_t buffer_index);
+        void enqueueRenderWriteBuffer(int task_width, int task_height, char* buffer, size_t buffer_index);
         void free();
 };
 

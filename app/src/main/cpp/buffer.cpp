@@ -3,9 +3,6 @@
 #include <cstring>
 
 buffer init_buf(int width, int height,char default_val) {
-    if (width % 2 == 1) width++;
-    if (height % 2 == 1) height++;
-
     char* data = new char[width * height * BUFFER_RUN]();
 
     for (int i = 0; i < height; i++) {
@@ -13,6 +10,23 @@ buffer init_buf(int width, int height,char default_val) {
             data[BUFFER_RUN * (i*width + j) + 0] = j; //buffer_value {
             data[BUFFER_RUN * (i*width + j) + 1] = i; //buffer_value {
             data[BUFFER_RUN * (i*width + j) + 2] = default_val; //buffer_value {
+        }
+    }
+
+    buffer n_buffer = {
+        width,
+        height,
+        data
+    };
+
+    return n_buffer;
+}
+buffer init_render_buf(int width, int height,char default_val) {
+    char* data = new char[width * height]();
+
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            data[i*width + j] = default_val; //buffer_value {
         }
     }
 
