@@ -44,24 +44,24 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
     cl->setArg(9,swap_requests,swap_requests_index,cl->process_kernel);
 }
 
-Chunk ChunkManager::get_chunk(int x, int y) {
-    return chunks.at(y).at(x);
+Chunk* ChunkManager::get_chunk(int x, int y) {
+    return &chunks.at(y).at(x);
 }
 
 buffer ChunkManager::get_render_buffer() {
     return render_buffer;
 }
 
-void ChunkManager::render_chunk(CL* cl,Chunk chunk) {
+void ChunkManager::render_chunk(CL* cl,Chunk* chunk) {
     // Tell the kernel the chunk's data and the chunk's position
-    cl->setArg(0,chunk.get_data(),chunk.buffer_index,cl->render_kernel);
-    cl->setArg(1,chunk.chunk_x,cl->render_kernel);
-    cl->setArg(2,chunk.chunk_y,cl->render_kernel);
+    cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->render_kernel);
+    cl->setArg(1,chunk->chunk_x,cl->render_kernel);
+    cl->setArg(2,chunk->chunk_y,cl->render_kernel);
 
     cl->setArg(4,camera.x,cl->render_kernel);
     cl->setArg(5,camera.y,cl->render_kernel);
 
-    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk.get_data().data, chunk.buffer_index);
+    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_data().data, chunk->buffer_index);
     cl->enqueueKernel(chunk_size,chunk_size,cl->render_kernel);
     cl->enqueueRenderReadBuffer(world_width,world_height, render_buffer.data, render_buffer_index);
 }
@@ -69,34 +69,35 @@ void ChunkManager::render_chunk(CL* cl,Chunk chunk) {
 void ChunkManager::update_chunks(CL* cl) {
     for (int y = 0; y < chunks.size(); y++) {
         for (int x = 0; x < chunks.at(y).size(); x++) {
-        Chunk chunk = get_chunk(x,y);
+        
+        Chunk* chunk = get_chunk(x,y);
 
         char materials[] = {'S','W','R',' '};
 
-        chunk.set_cell(chunk_size / 2,chunk_size / 2, materials[(y * chunks.size() + x)%2]);
+        chunk->set_cell(chunk_size / 2,chunk_size / 2, materials[(y * chunks.size() + x)%2]);
         refresh_chunk(cl,chunk);
         
-        cl->setArg(0,chunk.get_data(),chunk.buffer_index,cl->process_kernel);
-        cl->setArg(2,chunk.chunk_x,cl->process_kernel);
-        cl->setArg(3,chunk.chunk_y,cl->process_kernel);
+        cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->process_kernel);
+        cl->setArg(2,chunk->chunk_x,cl->process_kernel);
+        cl->setArg(3,chunk->chunk_y,cl->process_kernel);
 
-        for (int j = 0; j < chunk.highest_speed; j++) {
+        for (int j = 0; j < chunk->highest_speed; j++) {
             // Create chunk_size/2 x chunk_size/2 tasks, each processing a 2x2 block.
-            cl->setArg(1,chunk.get_iteration(),cl->process_kernel);
+            cl->setArg(1,chunk->get_iteration(),cl->process_kernel);
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
 
-            chunk.iterate();
+            chunk->iterate();
 
         }
 
-        cl->enqueueReadBuffer(chunk_size,chunk_size, chunk.get_data().data, chunk.buffer_index);
+        cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_data().data, chunk->buffer_index);
         render_chunk(cl,chunk);
         }
     }
 }
 
-void ChunkManager::refresh_chunk(CL* cl,Chunk chunk) {
-    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk.get_data().data, chunk.buffer_index);
+void ChunkManager::refresh_chunk(CL* cl,Chunk* chunk) {
+    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_data().data, chunk->buffer_index);
 }
 
 void ChunkManager::input(InputState input_state) {

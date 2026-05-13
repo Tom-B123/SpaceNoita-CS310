@@ -44,7 +44,7 @@ class ChunkManager {
 
         // Write a chunk's data to the render_buffer, 
         // based on the camera offset.
-        void render_chunk(CL* cl,Chunk chunk);
+        void render_chunk(CL* cl,Chunk* chunk);
 
         // Update a chunk's data, using it's update list and max speed to 
         // decide what to update, when.
@@ -52,12 +52,12 @@ class ChunkManager {
 
         void input(InputState input_state);
 
-        void refresh_chunk(CL* cl,Chunk chunk);
+        void refresh_chunk(CL* cl,Chunk* chunk);
 
         // Go over the border of the chunk and if any swap requests occur, swap the right 2 cells 
         // with the neighbouring chunk
         void process_swap_requests();
-        Chunk get_chunk(int x, int y);
+        Chunk* get_chunk(int x, int y);
 };
 
 #endif
