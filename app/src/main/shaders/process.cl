@@ -82,17 +82,43 @@ bool choice_swap(bool do_swap, __global char* data, bool valid_x, bool valid_y,
 
         // Delete both out of bounds cells, might lead to the material on the opposite side of the chunk getting deleted?
         buffer_value bv1 = get_buffer(data,i1);
-        set_buffer(data,i1,bv1);
 
+        int side = -1;
         /* buffer_value bv2 = get_buffer(data,i2); */
         /* set_buffer(data,i2,bv2); */
         
         if (bv1.material != MATERIAL_AIR) {
-            if (!valid_x) printf("invalid x!");
-            if (!valid_y) printf("invalid y!");
+
+            if (!valid_x){
+                if (bv1.x > chunk_size/2) {
+                    side = 1;
+                }
+                else {
+                    side = 3;
+                }
+            }
+            if (!valid_y) {
+                if (bv1.y > chunk_size/2) {
+                    side = 2;
+                }
+                else {
+                    side = 0;
+                }
+            }
+            if ((!valid_x || !valid_y) && side > -1) {
+                /* switch(side) { */
+                /*     case 0: printf("North exit!\n"); break; */
+                /*     case 1: printf("East exit!\n"); break; */
+                /*     case 2: printf("South exit!\n"); break; */
+                /*     case 3: printf("West exit!\n"); break; */
+                /* } */
+                set_buffer(swap_requests,bv1.x + chunk_size * side,bv1); 
+                bv1.material = MATERIAL_AIR;
+            }
         }
         /* request_swap(bv1,bv2,chunk_size,swap_requests); */
 
+        set_buffer(data,i1,bv1);
         return false;
     }
     else if (do_swap && cond) {
@@ -170,7 +196,7 @@ __kernel void process(__global char* data,int iteration,
 
     int direction = (rotation_direction + (randint(iteration,x,y) % 3600 < rotation_step)) % 4;
 
-    direction = 3;
+    direction = 0;
 
     int indicies[] = {
         y * (chunk_size) + x,                                      // [' ]

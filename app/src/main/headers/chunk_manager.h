@@ -56,7 +56,7 @@ class ChunkManager {
 
         // Go over the border of the chunk and if any swap requests occur, swap the right 2 cells 
         // with the neighbouring chunk
-        void process_swap_requests();
+        void process_swap_requests(CL* cl,Chunk* chunk);
         Chunk* get_chunk(int x, int y);
 };
 

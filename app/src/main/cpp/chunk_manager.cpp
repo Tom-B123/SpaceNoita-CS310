@@ -39,12 +39,13 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
     // (1->chunk_size,1) = East,
     // (1->chunk_size,2) = South,
     // (1->chunk_size,3) = West,
-    swap_requests = init_buf(chunk_size+1,4,0);
+    swap_requests = init_buf(chunk_size,4,0);
     swap_requests_index = cl->makeBuffer(swap_requests);
     cl->setArg(9,swap_requests,swap_requests_index,cl->process_kernel);
 }
 
 Chunk* ChunkManager::get_chunk(int x, int y) {
+    if (y >= chunks.size() || y < 0 || x >= chunks.at(y).size() || x < 0) { return nullptr; }
     return &chunks.at(y).at(x);
 }
 
@@ -74,7 +75,9 @@ void ChunkManager::update_chunks(CL* cl) {
 
         char materials[] = {'S','W','R',' '};
 
-        chunk->set_cell(chunk_size / 2,chunk_size / 2, materials[(y * chunks.size() + x)%2]);
+        if (y == 1 && x == 1) {
+            chunk->set_cell(chunk_size / 2,chunk_size / 2, materials[(y * chunks.size() + x)%2]);
+        }
         refresh_chunk(cl,chunk);
         
         cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->process_kernel);
@@ -87,6 +90,8 @@ void ChunkManager::update_chunks(CL* cl) {
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
 
             chunk->iterate();
+
+            process_swap_requests(cl,chunk);
 
         }
 
@@ -107,19 +112,39 @@ void ChunkManager::input(InputState input_state) {
     if (input_state.camera_left) {camera.x  -= camera.speed; }
 }
 
-void ChunkManager::process_swap_requests() {
-    buffer_value tl = get_buffer(swap_requests,0,0);
-    buffer_value tr = get_buffer(swap_requests,0,1);
-    buffer_value bl = get_buffer(swap_requests,0,2);
-    buffer_value br = get_buffer(swap_requests,0,3);
+void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
+    cl->enqueueReadBuffer(chunk_size,4, swap_requests.data, swap_requests_index);
+
+    // buffer_value tl = get_buffer(swap_requests,0,0);
+    // buffer_value tr = get_buffer(swap_requests,0,1);
+    // buffer_value bl = get_buffer(swap_requests,0,2);
+    // buffer_value br = get_buffer(swap_requests,0,3);
     
     for (int side = 0; side < 4; side++) {
-        for (int pos = 1; pos < swap_requests.width; pos++) {
+        for (int pos = 0; pos < swap_requests.width; pos++) {
             buffer_value bv = get_buffer(swap_requests, pos, side);
-            if (bv.material > ' ') {
-                std::cout << "Swap request for: " << bv.material << " (" << bv.x << "," << bv.y << ")" << ", At: " << pos << "," << side << std::endl;
+            if (bv.material != ' ' && bv.material != 0) {
+                // std::cout << "Swap request for [" << bv.material << "] (" << bv.x << "," << bv.y << ")" << " At: " << pos << "," << side << std::endl;
+                int x = chunk->chunk_x;
+                int y = chunk->chunk_y;
+                switch(side) {
+                    case 0: y += 1; break;
+                    case 1: x += 1; break;
+                    case 2: y -= 1; break;
+                    case 3: x -= 1; break;
+                }
+                Chunk* neighbour = get_chunk(x,y);
+                if (neighbour) {
+                    std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
+                    buffer_value nv = {(char)pos,0,'S'}; //get_buffer(neighbour->get_data(),pos,0);
+                    set_buffer(chunk->get_data(),pos,chunk_size-1,nv);
+                    set_buffer(neighbour->get_data(),pos,0,bv);
+                }
             }
         }
     }
+
+    // cl->enqueueWriteBuffer(chunk_size,chunk_size, chunk->get_data().data, chunk->buffer_index);
+    // if (neighbour) cl->enqueueWriteBuffer(chunk_size,chunk_size, neighbour->get_data().data, neighbour->buffer_index);
 
 }
