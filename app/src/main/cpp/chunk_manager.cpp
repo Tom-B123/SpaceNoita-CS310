@@ -16,7 +16,7 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
         Chunk(2,0,chunk_size,cl) 
     };
 
-    chunks.at(1).get_data().data[3] = 'S';
+    chunks.at(1).highest_speed = 5;
 
     // Tell the kernel what size each chunk is for rendering
     cl->setArg(3,chunk_size,cl->render_kernel);
