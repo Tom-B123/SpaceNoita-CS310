@@ -51,17 +51,11 @@ int Engine::main_loop() {
     // Main loop, 
     char materials[] = {'S','O','W'};
 
-    // cl->enqueueWriteBuffer(render_buf.width, render_buf.height, render_buf.data,render_buffer_index);
-    
     int* count = new int[256];
 
     while (window->is_open()) {
 
-        // update(&cl_components, &iteration, update_count, n_width, n_height,
-        //         buf,data_buffer);
-        chunk_manager.update_chunks(cl,iteration);
-
-        // chunk_manager.render_chunks(cl);
+        chunk_manager.update_chunks(cl);
 
         render_buf = chunk_manager.get_render_buffer();
 

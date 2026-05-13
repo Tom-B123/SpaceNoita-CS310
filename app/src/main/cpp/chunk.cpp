@@ -10,6 +10,8 @@ Chunk::Chunk(int x, int y,int size, CL* cl) :
 
     buffer_index = cl->makeBuffer(to_update);
     highest_speed = 1;
+
+    iteration = 0;
 }
 
 buffer Chunk::get_data() {
@@ -18,4 +20,12 @@ buffer Chunk::get_data() {
 
 void Chunk::set_cell(char x, char y, char val) {
     set_buffer(to_update, x, y, {x,y,val});
+}
+
+int Chunk::get_iteration() {
+    return iteration;
+}
+
+void Chunk::iterate() {
+    iteration++;
 }

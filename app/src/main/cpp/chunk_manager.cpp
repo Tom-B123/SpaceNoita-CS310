@@ -47,11 +47,9 @@ void ChunkManager::render_chunk(CL* cl,Chunk chunk) {
     cl->enqueueRenderReadBuffer(world_width,world_height, render_buffer.data, render_buffer_index);
 }
 
-void ChunkManager::update_chunks(CL* cl,int& iteration) {
-    int c_iteration = 0;
+void ChunkManager::update_chunks(CL* cl) {
     for (int i = 0; i < chunks.size(); i++) {
-        c_iteration = iteration;
-        Chunk chunk = chunks.at(i);
+        Chunk &chunk = chunks.at(i);
 
         char materials[] = {'S','W','R',' '};
 
@@ -62,17 +60,18 @@ void ChunkManager::update_chunks(CL* cl,int& iteration) {
         cl->setArg(2,chunk.chunk_x,cl->process_kernel);
         cl->setArg(3,chunk.chunk_y,cl->process_kernel);
 
-        for (int i = 0; i < chunk.highest_speed; i++) {
+        for (int j = 0; j < chunk.highest_speed; j++) {
             // Create chunk_size/2 x chunk_size/2 tasks, each processing a 2x2 block.
-            cl->setArg(1,c_iteration,cl->process_kernel);
+            cl->setArg(1,chunk.get_iteration(),cl->process_kernel);
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
-            c_iteration++;
-            // if (iteration%50 == 0) camera.x++;
+
+            chunk.iterate();
+
         }
+
         cl->enqueueReadBuffer(chunk_size,chunk_size, chunk.get_data().data, chunk.buffer_index);
         render_chunk(cl,chunk);
     }
-    iteration = c_iteration;
 }
 
 void ChunkManager::refresh_chunk(CL* cl,Chunk chunk) {

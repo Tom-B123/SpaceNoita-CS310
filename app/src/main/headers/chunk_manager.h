@@ -37,7 +37,7 @@ class ChunkManager {
 
         // Update a chunk's data, using it's update list and max speed to 
         // decide what to update, when.
-        void update_chunks(CL* cl, int& iteration); 
+        void update_chunks(CL* cl); 
 
         void refresh_chunk(CL* cl,Chunk chunk);
 };

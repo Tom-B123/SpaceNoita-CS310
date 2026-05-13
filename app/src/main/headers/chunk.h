@@ -10,6 +10,8 @@ class Chunk {
         // Stores a buffer with all the pixels that need to be updated
         buffer to_update;
         int to_update_count;
+        // How many times this chunk has been iterated
+        int iteration;
         
     public:
         // Position of the chunk, e.g. 0,0 = 1st chunk, 1,0 = 2nd chunk
@@ -21,6 +23,8 @@ class Chunk {
         buffer get_data();
         void set_cell(char x, char y, char val);
         void refresh_cells(CL* cl);
+        int get_iteration();
+        void iterate();
 };
 
 #endif
