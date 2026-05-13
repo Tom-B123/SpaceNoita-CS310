@@ -112,6 +112,14 @@ void ChunkManager::process_swap_requests() {
     buffer_value tr = get_buffer(swap_requests,0,1);
     buffer_value bl = get_buffer(swap_requests,0,2);
     buffer_value br = get_buffer(swap_requests,0,3);
-
+    
+    for (int side = 0; side < 4; side++) {
+        for (int pos = 1; pos < swap_requests.width; pos++) {
+            buffer_value bv = get_buffer(swap_requests, pos, side);
+            if (bv.material > ' ') {
+                std::cout << "Swap request for: " << bv.material << " (" << bv.x << "," << bv.y << ")" << ", At: " << pos << "," << side << std::endl;
+            }
+        }
+    }
 
 }

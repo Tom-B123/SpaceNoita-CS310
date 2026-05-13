@@ -50,25 +50,48 @@ __constant uchar material_weights[256] = {
 };
 
 
-void request_swap(buffer_value bv1, buffer_value bv2, int chunk_size) {
-    
-}
+/* void request_swap(buffer_value bv1, buffer_value bv2, int chunk_size, __global char* swap_requests) { */
+/*     int side = -1; */
+/*     buffer_value swap_value = {0,0,0}; */
+/*     if (bv1.material != MATERIAL_AIR && bv1.x >= chunk_size-1) {  */
+/*         swap_value = bv1;  */
+/*         side = 1;  */
+/*     } */
+/*     else if (bv2.material != MATERIAL_AIR && bv2.x >= chunk_size-1) {  */
+/*         swap_value = bv2;  */
+/*         side = 1;  */
+/*     } */
+/*     else if (bv1.material != MATERIAL_AIR && bv1.y >= chunk_size-1) {  */
+/*         swap_value = bv1;  */
+/*         side = 2;  */
+/*     } */
+/*     else if (bv2.material != MATERIAL_AIR && bv2.y >= chunk_size-1){  */
+/*         swap_value = bv2;  */
+/*         side = 2;  */
+/*     } */
+/**/
+/*     if (side > -1) { */
+/*         printf("Value: [%c] exitied on side: %i\n",swap_value.material,side); */
+/*     } */
+/* } */
 
-bool choice_swap(bool do_swap, __global char* data, 
-    bool in_bounds, bool cond, int i1, int i2, int chunk_size) {
+bool choice_swap(bool do_swap, __global char* data, bool valid_x, bool valid_y,
+    bool in_bounds, bool cond, int i1, int i2, int chunk_size, __global char* swap_requests) {
     
     if (!in_bounds) {
 
         // Delete both out of bounds cells, might lead to the material on the opposite side of the chunk getting deleted?
         buffer_value bv1 = get_buffer(data,i1);
-        bv1.material = ' ';
         set_buffer(data,i1,bv1);
 
-        buffer_value bv2 = get_buffer(data,i2);
-        bv2.material = ' ';
-        set_buffer(data,i2,bv2);
+        /* buffer_value bv2 = get_buffer(data,i2); */
+        /* set_buffer(data,i2,bv2); */
         
-        /* request_swap(bv1,bv2,chunk_size); */
+        if (bv1.material != MATERIAL_AIR) {
+            if (!valid_x) printf("invalid x!");
+            if (!valid_y) printf("invalid y!");
+        }
+        /* request_swap(bv1,bv2,chunk_size,swap_requests); */
 
         return false;
     }
@@ -136,6 +159,7 @@ __kernel void process(__global char* data,int iteration,
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
+
     int ox = chunk_x * chunk_size;
     int oy = chunk_y * chunk_size * width;
 
@@ -146,7 +170,7 @@ __kernel void process(__global char* data,int iteration,
 
     int direction = (rotation_direction + (randint(iteration,x,y) % 3600 < rotation_step)) % 4;
 
-    direction = 0;
+    direction = 3;
 
     int indicies[] = {
         y * (chunk_size) + x,                                      // [' ]
@@ -154,6 +178,9 @@ __kernel void process(__global char* data,int iteration,
         (((y+1)%chunk_size) * (chunk_size)) + x,                   // [. ]
         (((y+1)%chunk_size) * (chunk_size)) + (x+1) % chunk_size   // [ .]
     };
+
+    bool valid_x = x < chunk_size - 1;
+    bool valid_y = y < chunk_size - 1;
     int orderings[] = {
         //N:
         0,1,2,3,
@@ -196,6 +223,7 @@ __kernel void process(__global char* data,int iteration,
     moved |=choice_swap(
             true,
             data,
+            valid_x,valid_y,
             // Compare [. ] and [ ']
             y < chunk_size - 1 && y >= 0,
             properties1 & PROPERTY_POWDER && 
@@ -203,12 +231,14 @@ __kernel void process(__global char* data,int iteration,
             weight1 > weight3,
             index1,
             index3,
-            chunk_size
+            chunk_size,
+            swap_requests
     );
     // Compare [ '] and [ .]
     moved |=choice_swap(
             true,
             data,
+            valid_x,valid_y,
             // Compare [. ] and [ ']
             y < chunk_size - 1 && y >= 0,
             properties2 & PROPERTY_POWDER && 
@@ -216,12 +246,14 @@ __kernel void process(__global char* data,int iteration,
             weight2 > weight4,
             index2,
             index4,
-            chunk_size
+            chunk_size,
+            swap_requests
     );
     if (!moved) {
         moved |= choice_swap(
                 left_priority,
                 data,
+                valid_x,valid_y,
                 // Compare [' ] and [ .]
                 x < chunk_size-1 && 
                 y  < chunk_size - 1 && y >= 0,
@@ -230,13 +262,15 @@ __kernel void process(__global char* data,int iteration,
                 weight1 > weight4,
                 index1,
                 index4,
-                chunk_size
+                chunk_size,
+                swap_requests
         );
     }
     if (!moved) {
         moved |=choice_swap(
                 !left_priority,
                 data,
+                valid_x,valid_y,
                 // Compare [. ] and [ ']
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 && y >= 0,
@@ -245,7 +279,8 @@ __kernel void process(__global char* data,int iteration,
                 weight2 > weight3,
                 index2,
                 index3,
-                chunk_size
+                chunk_size,
+                swap_requests
         );
     }
     if (!moved) {
@@ -253,6 +288,7 @@ __kernel void process(__global char* data,int iteration,
         moved |=choice_swap(
                 left_priority,
                 data,
+                valid_x,valid_y,
                 // Compare [' ] and [ ']
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 && y >= 0,
@@ -261,13 +297,15 @@ __kernel void process(__global char* data,int iteration,
                 weight1 > weight2,
                 index1,
                 index2,
-                chunk_size
+                chunk_size,
+                swap_requests
         );
     }
     if (!moved) {
         moved |= choice_swap(
                 !left_priority,
                 data,
+                valid_x,valid_y,
                 // Compare [ '] and [' ]
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 && y >= 0,
@@ -276,13 +314,15 @@ __kernel void process(__global char* data,int iteration,
                 weight2 > weight1,
                 index2,
                 index1,
-                chunk_size
+                chunk_size,
+                swap_requests
         );
     }
     if (!moved) {
         moved |=choice_swap(
                 left_priority,
                 data,
+                valid_x,valid_y,
                 // Compare [. ] and [ .]
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 ,
@@ -291,13 +331,15 @@ __kernel void process(__global char* data,int iteration,
                 weight3 > weight4,
                 index3,
                 index4,
-                chunk_size
+                chunk_size,
+                swap_requests
         );
     }
     if (!moved) {
         moved |=choice_swap(
                 !left_priority,
                 data,
+                valid_x,valid_y,
                 // Compare [ .] and [. ]
                 x < chunk_size - 1 && 
                 y >= 0 && y < chunk_size - 1,
@@ -306,7 +348,8 @@ __kernel void process(__global char* data,int iteration,
                 weight4 > weight3,
                 index4,
                 index3,
-                chunk_size
+                chunk_size,
+                swap_requests
         );
     }
 }
