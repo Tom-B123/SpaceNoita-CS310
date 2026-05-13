@@ -59,9 +59,9 @@ int Engine::main_loop() {
 
         // update(&cl_components, &iteration, update_count, n_width, n_height,
         //         buf,data_buffer);
-        chunk_manager.update_chunk(cl,iteration);
+        chunk_manager.update_chunks(cl,iteration);
 
-        chunk_manager.render_chunk(cl);
+        // chunk_manager.render_chunks(cl);
 
         render_buf = chunk_manager.get_render_buffer();
 

@@ -33,12 +33,12 @@ class ChunkManager {
 
         // Write a chunk's data to the render_buffer, 
         // based on the camera offset.
-        void render_chunk(CL* cl);
+        void render_chunk(CL* cl,Chunk chunk);
 
         // Update a chunk's data, using it's update list and max speed to 
         // decide what to update, when.
-        void update_chunk(CL* cl, int& iteration); 
+        void update_chunks(CL* cl, int& iteration); 
 
-        void refresh_chunk(CL* cl);
+        void refresh_chunk(CL* cl,Chunk chunk);
 };
 #endif

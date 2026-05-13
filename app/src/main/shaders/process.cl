@@ -97,6 +97,7 @@ __kernel void process(__global char* data,int iteration,
         int chunk_x, int chunk_y, int chunk_size,
         int width, int height, int n_width, int n_height) {
 
+    return;
     int index = get_global_id(0);
 
     /* index += chunk_y * chunk_size * width + chunk_x * chunk_size; */
