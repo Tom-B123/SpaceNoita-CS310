@@ -27,7 +27,8 @@ class CL {
 
         CL(buffer buf);
         void check_error(cl_int err, std::string message);
-        int setArg(int arg_n,buffer buf,cl::Kernel kernel);
+        int makeBuffer(buffer buf);
+        void setArg(int arg_n,buffer buf,int buffer_index, cl::Kernel kernel);
         void setArg(int arg_n, int value,cl::Kernel kernel);
         void enqueueKernel(int task_width, int task_height,cl::Kernel kernel);
         void enqueueReadBuffer(int task_width, int task_height,char* buffer,size_t buffer_index);

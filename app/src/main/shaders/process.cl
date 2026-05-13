@@ -80,10 +80,12 @@ __kernel void render(__global char* data, __global char* render_buffer) {
 }
 
 __kernel void process(__global char* data,int iteration, 
-        int width, int height, int n_width, int n_height, 
-        __global char* spawners){
+        int width, int height, int n_width, int n_height) {
 
     int index = get_global_id(0);
+
+    /* buffer_value v = {0,0,'S'}; */
+    /* set_buffer(data,index,v); */
 
     // X -> index wrapped around width
     int x = index % (width/n_width);

@@ -77,15 +77,21 @@ void CL::check_error(cl_int err, std::string message) {
     }
 }
 
-// To Do::: This creates more and more buffer objects each time.
-int CL::setArg(int arg_n, buffer buf,cl::Kernel kernel) {
+int CL::makeBuffer(buffer buf) {
     cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, buf.width * buf.height * sizeof(buf.data[0]),buf.data);
     mem_buffers.push_back(mem_buffer);
 
+    std::cout << "Created memory buffer: " << mem_buffers.size() << " of size " << buf.width * buf.height * sizeof(buf.data[0]) << std::endl;
+
+    return mem_buffers.size() - 1;
+}
+
+void CL::setArg(int arg_n, buffer buf,int buffer_index, cl::Kernel kernel) {
+    
+    cl::Buffer mem_buffer = mem_buffers.at(buffer_index);
+
     cl_int err = kernel.setArg(arg_n, mem_buffer);
     check_error(err, "Failed to set buffer kernel argument!");
-
-    return mem_buffers.size()-1;
 }
 
 void CL::setArg(int arg_n, int value,cl::Kernel kernel) {
@@ -106,6 +112,7 @@ void CL::enqueueWriteBuffer(int task_width, int task_height, char* buffer, size_
     task_finished.wait();
 }
 void CL::free() {
+    std::cout  << "Releasing: " << mem_buffers.size() << " memory buffers!";
     for (size_t i = 0; i < mem_buffers.size(); i++) {
         clReleaseMemObject(mem_buffers.at(i).get());
     }

@@ -25,7 +25,7 @@ class ChunkManager {
         int world_width;
         int world_height;
     public:
-        ChunkManager(int world_width, int world_height);
+        ChunkManager(int world_width, int world_height, CL* cl);
 
         // Get the render buffer to display
         buffer get_render_buffer();
@@ -36,6 +36,8 @@ class ChunkManager {
 
         // Update a chunk's data, using it's update list and max speed to 
         // decide what to update, when.
-        void update_chunk(CL* cl); 
+        void update_chunk(CL* cl, int& iteration); 
+
+        void refresh_chunk(CL* cl);
 };
 #endif

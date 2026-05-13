@@ -30,7 +30,7 @@ buffer init_buf(int width, int height,char default_val) {
  *  Means that the meaning of each byte is clear and consistent.
  */
 void set_buffer(buffer buf, int x, int y,buffer_value data) {
-    size_t offset = (y * (buf.width) + x * BUFFER_RUN);
+    size_t offset = BUFFER_RUN * (y * (buf.width) + x);
 
     std::memcpy(buf.data + offset,&data,BUFFER_RUN);
 }
@@ -41,7 +41,7 @@ void set_buffer(buffer buf, int x, int y,buffer_value data) {
  */
 buffer_value get_buffer(buffer buf, int x, int y) {
     buffer_value v;
-    int offset = (y * (buf.width) + x * BUFFER_RUN);
+    int offset = BUFFER_RUN * (y * (buf.width) + x);
 
     std::memcpy(&v,buf.data + offset,BUFFER_RUN);
     return v;

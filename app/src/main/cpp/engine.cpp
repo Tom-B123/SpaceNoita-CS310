@@ -16,9 +16,9 @@
 // }
 Engine::Engine(int world_width, int world_height,
         CL* n_cl, GameWindow* n_window) : 
-    chunk_manager(ChunkManager(world_width,world_height)),
-    window(n_window),
     cl(n_cl),
+    window(n_window),
+    chunk_manager(ChunkManager(world_width,world_height,n_cl)),
     iteration(0)
 {
     n_width = 2;
@@ -34,28 +34,22 @@ int Engine::main_loop() {
     buffer render_buf = chunk_manager.get_render_buffer();
 
     // Update n times per tick
-    int update_count = 10;
-
     int iteration = 0;
 
-    buffer spawners = init_buf(WORLD_WIDTH,WORLD_HEIGHT,(char)0);
-
     // Send data to the GPU.
-    int data_buffer = cl->setArg(0,render_buf,cl->process_kernel);
+    int render_buffer_index = cl->makeBuffer(render_buf);
+    cl->setArg(0, render_buf,render_buffer_index,cl->process_kernel);
     cl->setArg(2, render_buf.width,cl->process_kernel);
     cl->setArg(3, render_buf.height,cl->process_kernel);
     cl->setArg(4, n_width,cl->process_kernel);
     cl->setArg(5, n_height,cl->process_kernel);
-    int spawner_buffer = cl->setArg(6, spawners,cl->process_kernel);
 
 
     // Main loop, 
     char materials[] = {'S','O','W'};
 
-    cl->enqueueWriteBuffer(render_buf.width, render_buf.height, render_buf.data,data_buffer);
-    cl->enqueueWriteBuffer(spawners.width, spawners.height, spawners.data,spawner_buffer);
-
-    int render_buffer_index = cl->setArg(1,render_buf,cl->render_kernel);
+    cl->enqueueWriteBuffer(render_buf.width, render_buf.height, render_buf.data,render_buffer_index);
+    cl->setArg(1,render_buf,render_buffer_index,cl->render_kernel);
     
     int* count = new int[256];
 
@@ -63,7 +57,7 @@ int Engine::main_loop() {
 
         // update(&cl_components, &iteration, update_count, n_width, n_height,
         //         buf,data_buffer);
-        chunk_manager.update_chunk(cl);
+        chunk_manager.update_chunk(cl,iteration);
 
         chunk_manager.render_chunk(cl,render_buffer_index);
 
@@ -80,7 +74,6 @@ int Engine::main_loop() {
     Sleep(2000);
 
     delete[](render_buf.data);
-    delete[](spawners.data);
     cl->free();
 
     return 0;
