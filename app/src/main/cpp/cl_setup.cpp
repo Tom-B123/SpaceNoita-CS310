@@ -77,23 +77,24 @@ void CL::check_error(cl_int err, std::string message) {
     }
 }
 
-int CL::setArg(int arg_n, buffer buf) {
+// To Do::: This creates more and more buffer objects each time.
+int CL::setArg(int arg_n, buffer buf,cl::Kernel kernel) {
     cl::Buffer mem_buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, buf.width * buf.height * sizeof(buf.data[0]),buf.data);
     mem_buffers.push_back(mem_buffer);
 
-    cl_int err = process_kernel.setArg(arg_n, mem_buffer);
+    cl_int err = kernel.setArg(arg_n, mem_buffer);
     check_error(err, "Failed to set buffer kernel argument!");
 
     return mem_buffers.size()-1;
 }
 
-void CL::setArg(int arg_n, int value) {
-    cl_int err = process_kernel.setArg(arg_n, value);
+void CL::setArg(int arg_n, int value,cl::Kernel kernel) {
+    cl_int err = kernel.setArg(arg_n, value);
     check_error(err, "Failed to set integer kernel argument!");
 }
 
-void CL::enqueueNDRangeKernel(int task_width, int task_height) {
-    cl_int err = command_queue.enqueueNDRangeKernel(process_kernel, cl::NullRange, cl::NDRange(task_width * task_height * BUFFER_RUN), cl::NullRange,nullptr,&task_finished);
+void CL::enqueueKernel(int task_width, int task_height,cl::Kernel kernel) {
+    cl_int err = command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(task_width * task_height), cl::NullRange,nullptr,&task_finished);
     task_finished.wait();
 }
 void CL::enqueueReadBuffer(int task_width, int task_height, char* buffer, size_t buffer_index) {

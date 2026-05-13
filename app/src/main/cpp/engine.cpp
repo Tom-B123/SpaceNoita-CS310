@@ -41,28 +41,31 @@ int Engine::main_loop() {
     buffer spawners = init_buf(WORLD_WIDTH,WORLD_HEIGHT,(char)0);
 
     // Send data to the GPU.
-    int data_buffer = cl->setArg(0,render_buf);
-    cl->setArg(2, render_buf.width);
-    cl->setArg(3, render_buf.height);
-    cl->setArg(4, n_width);
-    cl->setArg(5, n_height);
-    int spawner_buffer = cl->setArg(6, spawners);
+    int data_buffer = cl->setArg(0,render_buf,cl->process_kernel);
+    cl->setArg(2, render_buf.width,cl->process_kernel);
+    cl->setArg(3, render_buf.height,cl->process_kernel);
+    cl->setArg(4, n_width,cl->process_kernel);
+    cl->setArg(5, n_height,cl->process_kernel);
+    int spawner_buffer = cl->setArg(6, spawners,cl->process_kernel);
 
 
     // Main loop, 
     char materials[] = {'S','O','W'};
 
-
     cl->enqueueWriteBuffer(render_buf.width, render_buf.height, render_buf.data,data_buffer);
     cl->enqueueWriteBuffer(spawners.width, spawners.height, spawners.data,spawner_buffer);
 
+    int render_buffer_index = cl->setArg(1,render_buf,cl->render_kernel);
+    
     int* count = new int[256];
 
     while (window->is_open()) {
 
         // update(&cl_components, &iteration, update_count, n_width, n_height,
         //         buf,data_buffer);
-        chunk_manager.update_chunk();
+        chunk_manager.update_chunk(cl);
+
+        chunk_manager.render_chunk(cl,render_buffer_index);
 
         render_buf = chunk_manager.get_render_buffer();
 

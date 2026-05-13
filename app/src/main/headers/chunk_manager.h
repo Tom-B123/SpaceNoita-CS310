@@ -3,6 +3,7 @@
 
 #include "chunk.h"
 #include "buffer.h"
+#include "cl_setup.h"
 
 struct Camera {
     int x;
@@ -18,6 +19,11 @@ class ChunkManager {
 
         // The buffer that the world is rendered to
         buffer render_buffer;
+        // Size of chunks, e.g. 16x16 or 64x64 pixels
+        int chunk_size = 64;
+
+        int world_width;
+        int world_height;
     public:
         ChunkManager(int world_width, int world_height);
 
@@ -26,10 +32,10 @@ class ChunkManager {
 
         // Write a chunk's data to the render_buffer, 
         // based on the camera offset.
-        void render_chunk();
+        void render_chunk(CL* cl,int render_buffer_index);
 
         // Update a chunk's data, using it's update list and max speed to 
         // decide what to update, when.
-        void update_chunk(); 
+        void update_chunk(CL* cl); 
 };
 #endif
