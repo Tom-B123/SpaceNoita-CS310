@@ -184,6 +184,20 @@ __kernel void process(__global char* data,int iteration,
     char tmp;
     bool moved = false;
 
+    buffer_value bv = {0,0,'W'}; //get_buffer(data,index1);
+    /* buffer_value cur = get_buffer(data,index1); */
+    /* char cur_mat = cur.material; */
+    /* if (cur.material != MATERIAL_AIR) printf("Mat1: [%c], Mat2: [%c]\n",bv.material,cur.material); */
+    /* if (cur_mat == MATERIAL_WATER) {bv.material = 'W'; } //cur.material; */
+    /* bv.material = 'W'; */
+    /* set_buffer(data,index1,bv); */
+    /* bv.material = 'S'; */
+    /* set_buffer(data,index2,bv); */
+    /* bv.material = 'S'; */
+    /* set_buffer(data,index3,bv); */
+    /* bv.material = 'S'; */
+    /* set_buffer(data,index4,bv); */
+
     // Compare [' ] and [. ]
     moved |=choice_swap(
             true,
@@ -292,8 +306,5 @@ __kernel void process(__global char* data,int iteration,
                 index4+offset,
                 index3+offset
         );
-    }
-    if (moved) {
-        printf("%i moved!\n",index);
     }
 }
