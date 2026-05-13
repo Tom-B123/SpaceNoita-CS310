@@ -1,21 +1,9 @@
 #include "engine.h"
+#include "GLFW/glfw3.h"
 #include "buffer.h"
 #include "chunk_manager.h"
 #include "graphics.h"
 
-// void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
-//         int* iteration, int update_count, int n_width, int n_height,
-//         buffer buf, int data_buffer) {
-//
-//     for (int i = 0; i < update_count; i++) {
-//         cl_components->setArg(1,*iteration);
-//         // NDRange = num of parallel operations
-//         cl_components->enqueueNDRangeKernel(buf.width / n_width, buf.height / n_height);
-//
-//         *iteration = (*iteration) + 1;
-//     }
-//     cl_components->enqueueReadBuffer(buf.width, buf.height,buf.data,data_buffer);
-// }
 Engine::Engine(int world_width, int world_height,
         CL* n_cl, GameWindow* n_window) : 
     cl(n_cl),
@@ -25,6 +13,13 @@ Engine::Engine(int world_width, int world_height,
 {
     n_width = 2;
     n_height = 2;
+
+    input_state = {
+        false,
+        false,
+        false,
+        false
+    };
 }
 
 void Engine::update() {
@@ -63,6 +58,8 @@ int Engine::main_loop() {
 
         window->refresh();
         window->draw();
+
+        input();
     }
 
     window->close();
@@ -73,4 +70,23 @@ int Engine::main_loop() {
     cl->free();
 
     return 0;
+}
+
+void Engine::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mode) {
+    Engine* engine = (Engine*)glfwGetWindowUserPointer(window);
+
+    if (!engine) { return; }
+
+    bool is_pressed = (action == GLFW_PRESS || action == GLFW_REPEAT);
+
+    switch(key) {
+        case GLFW_KEY_W: engine->input_state.camera_up    = is_pressed; break;
+        case GLFW_KEY_A: engine->input_state.camera_right = is_pressed; break;
+        case GLFW_KEY_S: engine->input_state.camera_down  = is_pressed; break;
+        case GLFW_KEY_D: engine->input_state.camera_left  = is_pressed; break;
+    }
+}
+
+void Engine::input() {
+    chunk_manager.input(input_state);
 }

@@ -8,6 +8,14 @@
 struct Camera {
     int x;
     int y;
+    int speed;
+};
+
+struct InputState {
+    bool camera_up;
+    bool camera_left;
+    bool camera_down;
+    bool camera_right;
 };
 
 class ChunkManager {
@@ -20,6 +28,9 @@ class ChunkManager {
         // The buffer that the world is rendered to
         buffer render_buffer;
         int render_buffer_index;
+        
+        buffer swap_requests;
+        int swap_requests_index;
         // Size of chunks, e.g. 16x16 or 64x64 pixels
         int chunk_size = 64;
 
@@ -39,6 +50,9 @@ class ChunkManager {
         // decide what to update, when.
         void update_chunks(CL* cl); 
 
+        void input(InputState input_state);
+
         void refresh_chunk(CL* cl,Chunk chunk);
 };
+
 #endif

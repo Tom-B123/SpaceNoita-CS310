@@ -12,6 +12,7 @@ Chunk::Chunk(int x, int y,int size, CL* cl) :
     highest_speed = 1;
 
     iteration = 0;
+
 }
 
 buffer Chunk::get_data() {

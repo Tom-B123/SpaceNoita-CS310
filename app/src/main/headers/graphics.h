@@ -31,6 +31,7 @@ class GameWindow {
         void draw() ;
         void refresh();
         bool is_open();
+        GLFWwindow* get_window();
 };
 
 void print_buf(int width, int height, char* buf);

@@ -16,6 +16,9 @@ int main(){
 
     Engine engine(WORLD_WIDTH, WORLD_HEIGHT, &cl,&window);
     
+    glfwSetWindowUserPointer(window.get_window(), &engine);
+    glfwSetKeyCallback(window.get_window(), Engine::keyCallback);
+
     int error = engine.main_loop();
 
     return error;
