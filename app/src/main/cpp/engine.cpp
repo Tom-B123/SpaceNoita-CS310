@@ -46,7 +46,6 @@ int Engine::main_loop() {
     // Main loop, 
     char materials[] = {'S','O','W'};
 
-    int* count = new int[256];
 
     while (window->is_open()) {
 

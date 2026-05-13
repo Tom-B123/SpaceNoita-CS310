@@ -116,7 +116,6 @@ bool choice_swap(bool do_swap, __global char* data, bool valid_x, bool valid_y,
                 bv1.material = MATERIAL_AIR;
             }
         }
-        /* request_swap(bv1,bv2,chunk_size,swap_requests); */
 
         set_buffer(data,i1,bv1);
         return false;

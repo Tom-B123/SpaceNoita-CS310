@@ -17,8 +17,14 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
     for (int y = 0; y < world_height; y+= chunk_size) {
         std::vector<Chunk> row = std::vector<Chunk>();
         for (int x = 0; x < world_width; x+= chunk_size) {
+            Chunk n_chunk(x / chunk_size, y / chunk_size,chunk_size,cl);
+            if(y + chunk_size >= world_height) {
+                for (int i = 0; i < chunk_size; i++) {
+                    n_chunk.set_cell((char)i,(char)(chunk_size-5),'R');
+                }
+            }
             row.push_back(
-                Chunk(x / chunk_size, y / chunk_size,chunk_size,cl)
+                n_chunk
             );
         }
         chunks.push_back(row);
@@ -75,9 +81,9 @@ void ChunkManager::update_chunks(CL* cl) {
 
         char materials[] = {'S','W','R',' '};
 
-        if (y == 1 && x == 1) {
+        // if (y == 1 && x == 1) {
             chunk->set_cell(chunk_size / 2,chunk_size / 2, materials[(y * chunks.size() + x)%2]);
-        }
+        // }
         refresh_chunk(cl,chunk);
         
         cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->process_kernel);
@@ -128,14 +134,14 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
                 int x = chunk->chunk_x;
                 int y = chunk->chunk_y;
                 switch(side) {
-                    case 0: y += 1; break;
+                    case 0: y -= 1; break;
                     case 1: x += 1; break;
-                    case 2: y -= 1; break;
+                    case 2: y += 1; break;
                     case 3: x -= 1; break;
                 }
                 Chunk* neighbour = get_chunk(x,y);
                 if (neighbour) {
-                    std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
+                    // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
                     buffer_value nv = {(char)pos,0,'S'}; //get_buffer(neighbour->get_data(),pos,0);
                     set_buffer(chunk->get_data(),pos,chunk_size-1,nv);
                     set_buffer(neighbour->get_data(),pos,0,bv);
