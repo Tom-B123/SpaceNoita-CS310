@@ -52,11 +52,17 @@ __constant uchar material_weights[256] = {
 
 bool choice_swap(bool do_swap, __global char* data, 
     bool cond, int i1, int i2) {
-    buffer_value tmp;
     if (do_swap && cond) {
-        tmp = get_buffer(data,i1);
-        set_buffer(data,i1,get_buffer(data,i2));
-        set_buffer(data,i2,tmp);
+        char tmp;
+        buffer_value val1 = get_buffer(data,i1);
+        buffer_value val2 = get_buffer(data,i2);
+        
+        tmp = val1.material;
+        val1.material = val2.material;
+        val2.material = tmp;
+
+        set_buffer(data,i1,val1);
+        set_buffer(data,i2,val2);
         return true;
     }
     return false;
@@ -97,12 +103,11 @@ __kernel void process(__global char* data,int iteration,
         int chunk_x, int chunk_y, int chunk_size,
         int width, int height, int n_width, int n_height) {
 
-    return;
     int index = get_global_id(0);
 
     /* index += chunk_y * chunk_size * width + chunk_x * chunk_size; */
     
-    int shrink_factor = width / chunk_size;
+    /* int shrink_factor = width / chunk_size; */
 
     /* if (index == 0) printf("chunk %i,%i with size %i\n",chunk_x,chunk_y,chunk_size); */
 
@@ -124,10 +129,11 @@ __kernel void process(__global char* data,int iteration,
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
+
     int ox = chunk_x * chunk_size;
     int oy = chunk_y * chunk_size * width;
 
-    int offset = ox+oy;
+    int offset = 0;//ox+oy;
 
     int rotation_step = (iteration) % 3600;
     int rotation_direction = ((iteration) / 3600) % 4;
@@ -137,10 +143,10 @@ __kernel void process(__global char* data,int iteration,
     direction = 0;
 
     int indicies[] = {
-        y * (width/shrink_factor) + x,                                      // [' ]
-        y * (width/shrink_factor) + (x+1) % chunk_size,                     // [ ']
-        (((y+1)%chunk_size) * (width/shrink_factor)) + x,                   // [. ]
-        (((y+1)%chunk_size) * (width/shrink_factor)) + (x+1) % chunk_size   // [ .]
+        y * (chunk_size) + x,                                      // [' ]
+        y * (chunk_size) + (x+1) % chunk_size,                     // [ ']
+        (((y+1)%chunk_size) * (chunk_size)) + x,                   // [. ]
+        (((y+1)%chunk_size) * (chunk_size)) + (x+1) % chunk_size   // [ .]
     };
     int orderings[] = {
         //N:
@@ -164,31 +170,6 @@ __kernel void process(__global char* data,int iteration,
         int tmp = x; x = y; y = tmp;
         tmp = width; width = height; height = tmp;
     }
-
-    /* if (spawners[index1] > 0) { */
-    /*     if (data[index1] == MATERIAL_AIR) { */
-    /*         data[index1] = spawners[index1]; */
-    /*         return; */
-    /*     } */
-    /* } */
-    /* if (spawners[index2] > 0) { */
-    /*     if (data[index2] == MATERIAL_AIR) { */
-    /*         data[index2] = spawners[index2]; */
-    /*         return; */
-    /*     } */
-    /* } */
-    /* if (spawners[index3] > 0) { */
-    /*     if (data[index3] == MATERIAL_AIR) { */
-    /*         data[index3] = spawners[index3]; */
-    /*         return; */
-    /*     } */
-    /* } */
-    /* if (spawners[index4] > 0) { */
-    /*     if (data[index4] == MATERIAL_AIR) { */
-    /*         data[index4] = spawners[index4]; */
-    /*         return; */
-    /*     } */
-    /* } */
 
     int properties1 = material_properties[get_buffer(data,index1).material];
     int properties2 = material_properties[get_buffer(data,index2).material];
@@ -215,19 +196,6 @@ __kernel void process(__global char* data,int iteration,
             index1+offset,
             index3+offset
     );
-    /* if ( */
-    /*     y < height - 1 && y >= 0 && */
-    /*     properties1 & PROPERTY_POWDER &&  */
-    /*     !(properties3 & PROPERTY_SOLID) &&  */
-    /*     weight1 > weight3 */
-    /*    ){ */
-    /*     tmp = data[index1]; */
-    /*     data[index1] = data[index3]; */
-    /*     data[index3] = tmp; */
-    /*      set_buffer(data,index1,get_buffer(data,index3)); */ 
-    /*      set_buffer(data,index3, tmp); */ 
-    /*     moved = true; */
-    /* } */
     // Compare [ '] and [ .]
     moved |=choice_swap(
             true,
@@ -240,17 +208,6 @@ __kernel void process(__global char* data,int iteration,
             index2+offset,
             index4+offset
     );
-    /* if ( */
-    /*     y  < height - 1 && y >= 0 && */
-    /*     properties2 & PROPERTY_POWDER &&  */
-    /*     !(properties4 & PROPERTY_SOLID) &&  */
-    /*     weight2 > weight4 */
-    /*    ){ */
-    /*     tmp = data[index2]; */
-    /*     data[index2] = data[index4]; */
-    /*     data[index4] = tmp; */
-    /*     moved = true; */
-    /* } */
     if (!moved) {
         moved |= choice_swap(
                 left_priority,
@@ -335,5 +292,8 @@ __kernel void process(__global char* data,int iteration,
                 index4+offset,
                 index3+offset
         );
+    }
+    if (moved) {
+        printf("%i moved!\n",index);
     }
 }

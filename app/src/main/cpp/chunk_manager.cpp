@@ -53,9 +53,9 @@ void ChunkManager::update_chunks(CL* cl,int& iteration) {
 
         char materials[] = {'S','W','R',' '};
 
-        chunk.set_cell((iteration / 3) % chunk_size,i * 4, 'W');
+        chunk.set_cell(chunk_size / 2,i * 4, 'W');
         refresh_chunk(cl,chunk);
-        //
+        
         cl->setArg(0,chunk.get_data(),chunk.buffer_index,cl->process_kernel);
         cl->setArg(2,chunk.chunk_x,cl->process_kernel);
         cl->setArg(3,chunk.chunk_y,cl->process_kernel);
@@ -65,11 +65,9 @@ void ChunkManager::update_chunks(CL* cl,int& iteration) {
             cl->setArg(1,iteration,cl->process_kernel);
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
             iteration++;
-            if (iteration%50 == 0) camera.x++;
+            // if (iteration%50 == 0) camera.x++;
         }
-        iteration++;
         cl->enqueueReadBuffer(chunk_size,chunk_size, chunk.get_data().data, chunk.buffer_index);
-
         render_chunk(cl,chunk);
     }
 }
