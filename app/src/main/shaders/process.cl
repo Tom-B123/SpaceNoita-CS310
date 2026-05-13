@@ -73,6 +73,7 @@ uint randint(int iteration, int x, int y) {
 
 __kernel void render(__global char* data, 
     int chunk_x, int chunk_y, int chunk_size,
+    int camera_x, int camera_y,
     int width, int height,
     __global char* render_buffer) 
 {
@@ -85,7 +86,11 @@ __kernel void render(__global char* data,
     int x = index % chunk_size;
     int y = index / chunk_size;
 
-    render_buffer[y * width + x] = val.material;
+    int rx = x + camera_x + chunk_x * chunk_size;
+    int ry = y + camera_y + chunk_y * chunk_size;
+
+    if (rx < 0 || rx >= width || ry < 0 || ry >= height) return;
+    render_buffer[ry * width + rx] = val.material;
 }
 
 __kernel void process(__global char* data,int iteration, 
@@ -93,7 +98,11 @@ __kernel void process(__global char* data,int iteration,
         int width, int height, int n_width, int n_height) {
 
     int index = get_global_id(0);
+
+    /* index += chunk_y * chunk_size * width + chunk_x * chunk_size; */
     
+    int shrink_factor = width / chunk_size;
+
     /* if (index == 0) printf("chunk %i,%i with size %i\n",chunk_x,chunk_y,chunk_size); */
 
     /* return; */
@@ -114,6 +123,10 @@ __kernel void process(__global char* data,int iteration,
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
+    int ox = chunk_x * chunk_size;
+    int oy = chunk_y * chunk_size * width;
+
+    int offset = ox+oy;
 
     int rotation_step = (iteration) % 3600;
     int rotation_direction = ((iteration) / 3600) % 4;
@@ -123,10 +136,10 @@ __kernel void process(__global char* data,int iteration,
     direction = 0;
 
     int indicies[] = {
-        y * (width/2) + x,                          // [' ]
-        y * (width/2) + (x+1) % chunk_size,              // [ ']
-        (((y+1)%chunk_size) * (width/2)) + x,           // [. ]
-        (((y+1)%chunk_size) * (width/2)) + (x+1) % chunk_size// [ .]
+        y * (width/shrink_factor) + x,                                      // [' ]
+        y * (width/shrink_factor) + (x+1) % chunk_size,                     // [ ']
+        (((y+1)%chunk_size) * (width/shrink_factor)) + x,                   // [. ]
+        (((y+1)%chunk_size) * (width/shrink_factor)) + (x+1) % chunk_size   // [ .]
     };
     int orderings[] = {
         //N:
@@ -198,8 +211,8 @@ __kernel void process(__global char* data,int iteration,
             properties1 & PROPERTY_POWDER && 
             !(properties3 & PROPERTY_SOLID) && 
             weight1 > weight3,
-            index1,
-            index3
+            index1+offset,
+            index3+offset
     );
     /* if ( */
     /*     y < height - 1 && y >= 0 && */
@@ -223,8 +236,8 @@ __kernel void process(__global char* data,int iteration,
             properties2 & PROPERTY_POWDER && 
             !(properties4 & PROPERTY_SOLID) && 
             weight2 > weight4,
-            index2,
-            index4
+            index2+offset,
+            index4+offset
     );
     /* if ( */
     /*     y  < height - 1 && y >= 0 && */
@@ -247,8 +260,8 @@ __kernel void process(__global char* data,int iteration,
                 properties1 & PROPERTY_POWDER && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight1 > weight4,
-                index1,
-                index4
+                index1+offset,
+                index4+offset
         );
     }
     if (!moved) {
@@ -261,8 +274,8 @@ __kernel void process(__global char* data,int iteration,
                 properties2 & PROPERTY_POWDER && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight2 > weight3,
-                index2,
-                index3
+                index2+offset,
+                index3+offset
         );
     }
     if (!moved) {
@@ -276,8 +289,8 @@ __kernel void process(__global char* data,int iteration,
                 properties1 & PROPERTY_LIQUID && 
                 !(properties2 & PROPERTY_SOLID) && 
                 weight1 > weight2,
-                index1,
-                index2
+                index1+offset,
+                index2+offset
         );
     }
     if (!moved) {
@@ -290,8 +303,8 @@ __kernel void process(__global char* data,int iteration,
                 properties2 & PROPERTY_LIQUID && 
                 !(properties1 & PROPERTY_SOLID) && 
                 weight2 > weight1,
-                index2,
-                index1
+                index2+offset,
+                index1+offset
         );
     }
     if (!moved) {
@@ -304,8 +317,8 @@ __kernel void process(__global char* data,int iteration,
                 properties3 & PROPERTY_LIQUID && 
                 !(properties4 & PROPERTY_SOLID) && 
                 weight3 > weight4,
-                index3,
-                index4
+                index3+offset,
+                index4+offset
         );
     }
     if (!moved) {
@@ -318,8 +331,8 @@ __kernel void process(__global char* data,int iteration,
                 properties4 & PROPERTY_LIQUID && 
                 !(properties3 & PROPERTY_SOLID) && 
                 weight4 > weight3,
-                index4,
-                index3
+                index4+offset,
+                index3+offset
         );
     }
 }

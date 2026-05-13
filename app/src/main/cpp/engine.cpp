@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "buffer.h"
+#include "chunk_manager.h"
 #include "graphics.h"
 
 // void update(CL* cl_components, //cl::Kernel kernel, cl::CommandQueue queue, cl::Buffer mem_buf, 
@@ -24,7 +25,6 @@ Engine::Engine(int world_width, int world_height,
 {
     n_width = 2;
     n_height = 2;
-
 }
 
 void Engine::update() {
@@ -44,8 +44,9 @@ int Engine::main_loop() {
     cl->setArg(8, n_height,cl->process_kernel);
 
     // Set Render kernel arguments
-    cl->setArg(4, render_buf.width,cl->render_kernel);
-    cl->setArg(5, render_buf.height,cl->render_kernel);
+    cl->setArg(6, render_buf.width,cl->render_kernel);
+    cl->setArg(7, render_buf.height,cl->render_kernel);
+
 
     // Main loop, 
     char materials[] = {'S','O','W'};

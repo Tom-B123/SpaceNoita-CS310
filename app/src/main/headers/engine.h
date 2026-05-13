@@ -19,7 +19,6 @@ class Engine {
         int n_width;
         int n_height;
 
-
     public:
         Engine(int world_width, int world_height, 
                 CL* n_cl,GameWindow* n_window);

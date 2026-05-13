@@ -15,8 +15,8 @@
 #include <Windows.h>
 #include <string>
 
-const int WORLD_WIDTH = 32;
-const int WORLD_HEIGHT = 32;
+const int WORLD_WIDTH = 512;
+const int WORLD_HEIGHT = 512;
 const double PIXEL_SCALE = 1;
 const int CELL_WIDTH = 2;
 const int CELL_HEIGHT = 2;
