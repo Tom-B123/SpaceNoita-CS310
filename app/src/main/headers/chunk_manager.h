@@ -21,7 +21,7 @@ struct InputState {
 class ChunkManager {
     private:
         // All the chunks created
-        std::vector<Chunk> chunks;
+        std::vector<std::vector<Chunk>> chunks;
         // The camera that decides which chunks should be rendered
         Camera camera;
 
@@ -53,6 +53,11 @@ class ChunkManager {
         void input(InputState input_state);
 
         void refresh_chunk(CL* cl,Chunk chunk);
+
+        // Go over the border of the chunk and if any swap requests occur, swap the right 2 cells 
+        // with the neighbouring chunk
+        void process_swap_requests();
+        Chunk get_chunk(int x, int y);
 };
 
 #endif

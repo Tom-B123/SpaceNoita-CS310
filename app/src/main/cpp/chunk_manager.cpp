@@ -12,14 +12,16 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
 
     render_buffer = init_render_buf(world_width,world_height,'?');
 
-    chunks = std::vector<Chunk>();
+    chunks = std::vector<std::vector<Chunk>>();
 
     for (int y = 0; y < world_height; y+= chunk_size) {
+        std::vector<Chunk> row = std::vector<Chunk>();
         for (int x = 0; x < world_width; x+= chunk_size) {
-            chunks.push_back(
+            row.push_back(
                 Chunk(x / chunk_size, y / chunk_size,chunk_size,cl)
             );
         }
+        chunks.push_back(row);
     }
 
     // Tell the kernel what size each chunk is for rendering
@@ -42,6 +44,10 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
     cl->setArg(9,swap_requests,swap_requests_index,cl->process_kernel);
 }
 
+Chunk ChunkManager::get_chunk(int x, int y) {
+    return chunks.at(y).at(x);
+}
+
 buffer ChunkManager::get_render_buffer() {
     return render_buffer;
 }
@@ -61,12 +67,13 @@ void ChunkManager::render_chunk(CL* cl,Chunk chunk) {
 }
 
 void ChunkManager::update_chunks(CL* cl) {
-    for (int i = 0; i < chunks.size(); i++) {
-        Chunk &chunk = chunks.at(i);
+    for (int y = 0; y < chunks.size(); y++) {
+        for (int x = 0; x < chunks.at(y).size(); x++) {
+        Chunk chunk = get_chunk(x,y);
 
         char materials[] = {'S','W','R',' '};
 
-        chunk.set_cell(chunk_size / 2,chunk_size / 2, materials[i%2]);
+        chunk.set_cell(chunk_size / 2,chunk_size / 2, materials[(y * chunks.size() + x)%2]);
         refresh_chunk(cl,chunk);
         
         cl->setArg(0,chunk.get_data(),chunk.buffer_index,cl->process_kernel);
@@ -84,6 +91,7 @@ void ChunkManager::update_chunks(CL* cl) {
 
         cl->enqueueReadBuffer(chunk_size,chunk_size, chunk.get_data().data, chunk.buffer_index);
         render_chunk(cl,chunk);
+        }
     }
 }
 
@@ -96,4 +104,13 @@ void ChunkManager::input(InputState input_state) {
     if (input_state.camera_right){camera.x  += camera.speed; }
     if (input_state.camera_down) {camera.y  -= camera.speed; }
     if (input_state.camera_left) {camera.x  -= camera.speed; }
+}
+
+void ChunkManager::process_swap_requests() {
+    buffer_value tl = get_buffer(swap_requests,0,0);
+    buffer_value tr = get_buffer(swap_requests,0,1);
+    buffer_value bl = get_buffer(swap_requests,0,2);
+    buffer_value br = get_buffer(swap_requests,0,3);
+
+
 }

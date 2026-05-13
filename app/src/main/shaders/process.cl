@@ -68,7 +68,7 @@ bool choice_swap(bool do_swap, __global char* data,
         bv2.material = ' ';
         set_buffer(data,i2,bv2);
         
-        request_swap(bv1,bv2,chunk_size);
+        /* request_swap(bv1,bv2,chunk_size); */
 
         return false;
     }
