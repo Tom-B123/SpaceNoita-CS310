@@ -8,7 +8,7 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
 {
     camera = {0,0,1};
 
-    chunk_size = 64;
+    chunk_size = 16;
 
     render_buffer = init_render_buf(world_width,world_height,'?');
 
@@ -82,7 +82,7 @@ void ChunkManager::update_chunks(CL* cl) {
         char materials[] = {'S','W','R',' '};
 
         if (y == 0&&x==1 && chunk->get_iteration() < 3000) {
-            chunk->set_cell(7 * chunk_size / 8,chunk_size / 4, 'S');
+            chunk->set_cell(chunk_size / 2,chunk_size / 4, 'S');
             // chunk->set_cell(0,chunk_size / 2, 'R');
         }
         refresh_chunk(cl,chunk);
