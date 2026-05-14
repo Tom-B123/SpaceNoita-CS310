@@ -28,6 +28,7 @@ class Chunk {
         void refresh_cells(CL* cl);
         int get_iteration();
         void iterate();
+        void free();
 };
 
 #endif

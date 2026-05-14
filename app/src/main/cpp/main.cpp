@@ -2,24 +2,32 @@
 #include "graphics.h"
 #include "cl_setup.h"
 #include "engine.h"
-#include "buffer.h"
 
 
 
 int main(){
+    int error;
+    {   
+        GameWindow window(WORLD_WIDTH,WORLD_HEIGHT);
+        {
+            CL cl = CL();
 
-    GameWindow window(WORLD_WIDTH,WORLD_HEIGHT);
+            Engine engine(WORLD_WIDTH, WORLD_HEIGHT, &cl,&window);
 
-    buffer buf = init_buf(WORLD_WIDTH, WORLD_HEIGHT,' ');
+            glfwSetWindowUserPointer(window.get_window(), &engine);
+            glfwSetKeyCallback(window.get_window(), Engine::keyCallback);
 
-    CL cl(buf);
-
-    Engine engine(WORLD_WIDTH, WORLD_HEIGHT, &cl,&window);
+            error = engine.main_loop();
+        }
+    }
     
-    glfwSetWindowUserPointer(window.get_window(), &engine);
-    glfwSetKeyCallback(window.get_window(), Engine::keyCallback);
+    std::cout << "Exiting with error: " << error << std::endl;
 
-    int error = engine.main_loop();
+    std::cout.flush();
 
-    return error;
+    TerminateProcess(GetCurrentProcess(),error);
+
+    std::cout << "Forced exit: " << error << std::endl;
+    
+    _exit(error);
 }

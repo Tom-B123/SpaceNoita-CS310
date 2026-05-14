@@ -11,9 +11,11 @@ Engine::Engine(int world_width, int world_height,
     chunk_manager(ChunkManager(world_width,world_height,n_cl)),
     iteration(0)
 {
+    // Tell the kernel to use 2x2 cells in margolous neighbourhood
     n_width = 2;
     n_height = 2;
 
+    // All inputs initially not pressed
     input_state = {
         false,
         false,
@@ -22,11 +24,8 @@ Engine::Engine(int world_width, int world_height,
     };
 }
 
-void Engine::update() {
-
-}
-
 int Engine::main_loop() {
+    // The buffer that the game world is rendered to.
     buffer render_buf = chunk_manager.get_render_buffer();
 
     // Update n times per tick
@@ -44,29 +43,27 @@ int Engine::main_loop() {
 
 
     // Main loop, 
-    char materials[] = {'S','O','W'};
-
-
     while (window->is_open()) {
-
+        
+        // Update the render buffer by processing each chunk
         chunk_manager.update_chunks(cl);
 
         render_buf = chunk_manager.get_render_buffer();
-
+        
+        // Display the new render buffer
         window->update_texture(render_buf.data);
 
         window->refresh();
         window->draw();
 
+        // Take user inputs
         input();
+
     }
 
+    std::cout << "Exited main loop" << std::endl;
     window->close();
-
-    Sleep(2000);
-
-    delete[](render_buf.data);
-    cl->free();
+    std::cout << "Window closed" << std::endl;
 
     return 0;
 }

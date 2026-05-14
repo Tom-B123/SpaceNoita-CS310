@@ -2,7 +2,7 @@
 #include "buffer.h"
 
 
-CL::CL(buffer buf) {
+CL::CL() {
 
     /**
      * Search for all the OpenCL platforms available and check
@@ -130,17 +130,31 @@ void CL::enqueueRenderWriteBuffer(int task_width, int task_height, char* buffer,
 }
 
 void CL::free() {
-    std::cout  << "Releasing: " << mem_buffers.size() << " memory buffers!";
+    task_finished.wait();
+    command_queue.finish();
+
+    command_queue.flush();
+
+    Sleep(200);
+
+    clFinish(command_queue.get());
+
     for (size_t i = 0; i < mem_buffers.size(); i++) {
         clReleaseMemObject(mem_buffers.at(i).get());
     }
-    clReleaseCommandQueue(command_queue.get());
-    clReleaseContext(context.get());
-    clReleaseDevice(device.get());
+
     clReleaseEvent(task_finished.get());
+
     clReleaseKernel(process_kernel.get());
     clReleaseKernel(render_kernel.get());
     clReleaseProgram(program.get());
+
+    clReleaseCommandQueue(command_queue.get());
+
+    clReleaseContext(context.get());
+
+    clReleaseDevice(device.get());
+    std::cout  << "Released " << mem_buffers.size() << " memory buffers" << std::endl;
 }
 
 std::string find_shader_file(std::string shader) {

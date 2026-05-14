@@ -133,6 +133,8 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
 
     int side;
 
+    int skip = 0;
+
     side = 0;
     for (int pos = 0; pos < swap_requests.width; pos++) {
         buffer_value bv = get_buffer(swap_requests, pos, side);
@@ -150,66 +152,12 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             Chunk* neighbour = get_chunk(x,y);
             if (neighbour) {
                 // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
-                buffer_value nv = {(char)pos,(char)(chunk_size-3),'?'};
-                nv.material = get_buffer(neighbour->get_data(),pos,chunk_size-3).material;
-                set_buffer(chunk->get_data(),pos,2,nv);
+                buffer_value nv = {(char)pos,(char)(chunk_size-1-skip),'?'};
+                nv.material = get_buffer(neighbour->get_data(),pos,chunk_size-1-skip).material;
+                set_buffer(chunk->get_data(),pos,skip,nv);
                 bv.x = pos;
-                bv.y = chunk_size-3;
-                set_buffer(neighbour->get_data(),pos,chunk_size-3,bv);
-                updated_neighbours[side] = neighbour;
-            }
-        }
-    }
-    side = 3;
-    for (int pos = 0; pos < swap_requests.width; pos++) {
-        buffer_value bv = get_buffer(swap_requests, pos, side);
-        if (bv.material != ' ' && bv.material != 0) {
-            // std::cout << "Swap request for [" << bv.material << "] (" << bv.x << "," << bv.y << ")" << " At: " << pos << "," << side << std::endl;
-            int x = chunk->chunk_x;
-            int y = chunk->chunk_y;
-            switch(side) {
-                case 0: y -= 1; break;
-                case 1: x += 1; break;
-                case 2: y += 1; break;
-                case 3: x -= 1; break;
-            }
-
-            Chunk* neighbour = get_chunk(x,y);
-            if (neighbour) {
-                // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
-                buffer_value nv = {(char)(chunk_size-3),(char)pos,'?'};
-                nv.material = get_buffer(neighbour->get_data(),chunk_size-3,pos).material;
-                set_buffer(chunk->get_data(),2,pos,nv);
-                bv.x = chunk_size-3;
-                bv.y = pos;
-                set_buffer(neighbour->get_data(),chunk_size-3,pos,bv);
-                updated_neighbours[side] = neighbour;
-            }
-        }
-    }
-    side = 2;
-    for (int pos = 0; pos < swap_requests.width; pos++) {
-        buffer_value bv = get_buffer(swap_requests, pos, side);
-        if (bv.material != ' ' && bv.material != 0) {
-            // std::cout << "Swap request for [" << bv.material << "] (" << bv.x << "," << bv.y << ")" << " At: " << pos << "," << side << std::endl;
-            int x = chunk->chunk_x;
-            int y = chunk->chunk_y;
-            switch(side) {
-                case 0: y -= 1; break;
-                case 1: x += 1; break;
-                case 2: y += 1; break;
-                case 3: x -= 1; break;
-            }
-
-            Chunk* neighbour = get_chunk(x,y);
-            if (neighbour) {
-                // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
-                buffer_value nv = {(char)pos,2,'?'};
-                nv.material = get_buffer(neighbour->get_data(),pos,2).material;
-                set_buffer(chunk->get_data(),pos,chunk_size-3,nv);
-                bv.x = pos;
-                bv.y = 2;
-                set_buffer(neighbour->get_data(),pos,2,bv);
+                bv.y = chunk_size-1-skip;
+                set_buffer(neighbour->get_data(),pos,chunk_size-1-skip,bv);
                 updated_neighbours[side] = neighbour;
             }
         }
@@ -231,12 +179,66 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             Chunk* neighbour = get_chunk(x,y);
             if (neighbour) {
                 // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
-                buffer_value nv = {(char)(2),(char)pos,'?'};
-                nv.material = get_buffer(neighbour->get_data(),2,pos).material;
-                set_buffer(chunk->get_data(),chunk_size-3,pos,nv);
-                bv.x = 2;
+                buffer_value nv = {(char)(skip),(char)pos,'?'};
+                nv.material = get_buffer(neighbour->get_data(),chunk_size-1-skip,pos).material;
+                set_buffer(chunk->get_data(),chunk_size-1-skip,pos,nv);
+                bv.x = skip;
                 bv.y = pos;
-                set_buffer(neighbour->get_data(),2,pos,bv);
+                set_buffer(neighbour->get_data(),skip,pos,bv);
+                updated_neighbours[side] = neighbour;
+            }
+        }
+    }
+    side = 2;
+    for (int pos = 0; pos < swap_requests.width; pos++) {
+        buffer_value bv = get_buffer(swap_requests, pos, side);
+        if (bv.material != ' ' && bv.material != 0) {
+            // std::cout << "Swap request for [" << bv.material << "] (" << bv.x << "," << bv.y << ")" << " At: " << pos << "," << side << std::endl;
+            int x = chunk->chunk_x;
+            int y = chunk->chunk_y;
+            switch(side) {
+                case 0: y -= 1; break;
+                case 1: x += 1; break;
+                case 2: y += 1; break;
+                case 3: x -= 1; break;
+            }
+
+            Chunk* neighbour = get_chunk(x,y);
+            if (neighbour) {
+                // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
+                buffer_value nv = {(char)pos,(char)skip,'?'};
+                nv.material = get_buffer(neighbour->get_data(),pos,skip).material;
+                set_buffer(chunk->get_data(),pos,chunk_size-1-skip,nv);
+                bv.x = pos;
+                bv.y = skip;
+                set_buffer(neighbour->get_data(),pos,skip,bv);
+                updated_neighbours[side] = neighbour;
+            }
+        }
+    }
+    side = 3;
+    for (int pos = 0; pos < swap_requests.width; pos++) {
+        buffer_value bv = get_buffer(swap_requests, pos, side);
+        if (bv.material != ' ' && bv.material != 0) {
+            // std::cout << "Swap request for [" << bv.material << "] (" << bv.x << "," << bv.y << ")" << " At: " << pos << "," << side << std::endl;
+            int x = chunk->chunk_x;
+            int y = chunk->chunk_y;
+            switch(side) {
+                case 0: y -= 1; break;
+                case 1: x += 1; break;
+                case 2: y += 1; break;
+                case 3: x -= 1; break;
+            }
+
+            Chunk* neighbour = get_chunk(x,y);
+            if (neighbour) {
+                // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
+                buffer_value nv = {(char)(chunk_size-1-skip),(char)pos,'?'};
+                nv.material = get_buffer(neighbour->get_data(),skip,pos).material;
+                set_buffer(chunk->get_data(),skip,pos,nv);
+                bv.x = chunk_size-1-skip;
+                bv.y = pos;
+                set_buffer(neighbour->get_data(),chunk_size-1-skip,pos,bv);
                 updated_neighbours[side] = neighbour;
             }
         }
@@ -257,4 +259,15 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             cl->enqueueWriteBuffer(chunk_size, chunk_size, neighbour->get_data().data, neighbour->buffer_index);
         }
     }
+}
+
+void ChunkManager::free_chunks() {
+    int freed_count = 0;
+    for (int y = 0; y < chunks.size(); y++) {
+        for (int x = 0; x < chunks.at(y).size(); x++) {
+            get_chunk(x,y)->free();
+            freed_count++;
+        }
+    }
+    std::cout << "Freed " << freed_count << " chunks" << std::endl;
 }

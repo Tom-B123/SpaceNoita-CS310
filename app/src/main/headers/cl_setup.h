@@ -25,7 +25,19 @@ class CL {
         cl::Kernel process_kernel;
         cl::Kernel render_kernel;
 
-        CL(buffer buf);
+        CL();
+        ~CL() {
+            if (command_queue.get()) {
+                command_queue.finish();
+                clFinish(command_queue.get());
+            }
+
+            Sleep(100);
+            mem_buffers.clear();
+            std::cout << "CL freed" << std::endl;
+            Sleep(100);
+
+        }
         void check_error(cl_int err, std::string message);
         /**
          *  Make a new CL::Buffer

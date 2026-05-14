@@ -1,4 +1,5 @@
 #include "graphics.h"
+#include "GLFW/glfw3.h"
 
 
 void print_buf(int width, int height, char* buf) {
@@ -161,7 +162,7 @@ void GameWindow::update_texture(char* data) {
 }
 
 void GameWindow::close() {
-    glfwTerminate();
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
 void GameWindow::draw() {
@@ -181,12 +182,14 @@ void GameWindow::refresh() {
 
 bool GameWindow::is_open() {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-        return false;
+        close();
     }
     return !glfwWindowShouldClose(window);
 }
 
 GLFWwindow* GameWindow::get_window() {
     return window;
+}
+
+void GameWindow::hide() {
 }

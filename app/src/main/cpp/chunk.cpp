@@ -30,3 +30,8 @@ int Chunk::get_iteration() {
 void Chunk::iterate() {
     iteration++;
 }
+
+void Chunk::free() {
+    delete[] to_update.data;
+    std::cout << "Chunk: " << chunk_x << "," << chunk_y << " freed" << std::endl;
+}

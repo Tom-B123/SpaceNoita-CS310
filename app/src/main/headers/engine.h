@@ -28,6 +28,9 @@ class Engine {
         static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
         Engine(int world_width, int world_height, 
                 CL* n_cl,GameWindow* n_window);
+        ~Engine() {
+            std::cout << "Engine freed" << std::endl;
+        }
         void update();
         void input();
         int main_loop();

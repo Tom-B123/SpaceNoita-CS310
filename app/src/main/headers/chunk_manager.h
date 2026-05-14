@@ -38,6 +38,19 @@ class ChunkManager {
         int world_height;
     public:
         ChunkManager(int world_width, int world_height, CL* cl);
+        ~ChunkManager() {
+            delete[] render_buffer.data;
+            render_buffer.data = nullptr;
+            delete[] swap_requests.data;
+            swap_requests.data = nullptr;
+
+            for (auto& row : chunks) {
+                for (auto& chunk : row ) {
+                    chunk.free();
+                }
+            }
+            chunks.clear();
+        }
 
         // Get the render buffer to display
         buffer get_render_buffer();
@@ -58,6 +71,8 @@ class ChunkManager {
         // with the neighbouring chunk
         void process_swap_requests(CL* cl,Chunk* chunk);
         Chunk* get_chunk(int x, int y);
+
+        void free_chunks();
 };
 
 #endif
