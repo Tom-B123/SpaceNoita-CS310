@@ -165,6 +165,7 @@ void GameWindow::close() {
 }
 
 void GameWindow::draw() {
+    glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shader_program);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindVertexArray(vao);

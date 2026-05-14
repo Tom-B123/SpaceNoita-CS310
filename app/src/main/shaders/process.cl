@@ -87,7 +87,7 @@ bool choice_swap(bool do_swap, __global char* data, bool valid_x, bool valid_y,
         /* buffer_value bv2 = get_buffer(data,i2); */
         /* set_buffer(data,i2,bv2); */
         
-        if (bv1.material != MATERIAL_AIR) {
+        if (material_properties[bv1.material] & PROPERTY_POWDER) {
 
             if (!valid_x){
                 if (bv1.x > chunk_size/2) {
@@ -112,7 +112,11 @@ bool choice_swap(bool do_swap, __global char* data, bool valid_x, bool valid_y,
                 /*     case 2: printf("South exit!\n"); break; */
                 /*     case 3: printf("West exit!\n"); break; */
                 /* } */
-                set_buffer(swap_requests,bv1.x + chunk_size * side,bv1); 
+                if (side == 0 || side == 2) {
+                    set_buffer(swap_requests,bv1.x + chunk_size * side,bv1); 
+                }   else {
+                    set_buffer(swap_requests,bv1.y + chunk_size * side,bv1); 
+                }
                 bv1.material = MATERIAL_AIR;
             }
         }
