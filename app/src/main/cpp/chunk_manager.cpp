@@ -47,7 +47,7 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
     // (1->chunk_size,3) = West,
     swap_requests = init_buf(chunk_size,4,0);
     swap_requests_index = cl->makeBuffer(swap_requests);
-    cl->setArg(9,swap_requests,swap_requests_index,cl->process_kernel);
+    // cl->setArg(9,swap_requests,swap_requests_index,cl->process_kernel);
 }
 
 Chunk* ChunkManager::get_chunk(int x, int y) {
@@ -94,6 +94,7 @@ void ChunkManager::update_chunks(CL* cl) {
         for (int j = 0; j < chunk->highest_speed; j++) {
             // Create chunk_size/2 x chunk_size/2 tasks, each processing a 2x2 block.
             cl->setArg(1,chunk->get_iteration(),cl->process_kernel);
+            cl->setArg(9,chunk->get_update_count_buf(),chunk->to_update_count_index,cl->process_kernel);
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
 
             chunk->iterate();

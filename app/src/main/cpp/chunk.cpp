@@ -6,13 +6,16 @@ Chunk::Chunk(int x, int y,int size, CL* cl) :
     chunk_y(y) 
 {
     to_update = init_buf(size, size, ' ');
-    to_update_count = 0;
+    // This is an unsigned int value, so stored as 4 bytes.
+    //                         1 256 65536  16777216
+    char raw_update_count[] = {0,0,  0,     0};
+    to_update_count_buf = {4,1,raw_update_count};
+    to_update_count_index = cl->makeRenderBuffer(to_update_count_buf);
 
     buffer_index = cl->makeBuffer(to_update);
     highest_speed = 1;
 
     iteration = 0;
-
 }
 
 buffer Chunk::get_data() {
@@ -25,6 +28,9 @@ void Chunk::set_cell(char x, char y, char val) {
 
 int Chunk::get_iteration() {
     return iteration;
+}
+buffer Chunk::get_update_count_buf() {
+    return to_update_count_buf;
 }
 
 void Chunk::iterate() {

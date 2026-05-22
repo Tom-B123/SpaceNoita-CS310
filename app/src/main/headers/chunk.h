@@ -9,7 +9,8 @@ class Chunk {
     private:
         // Stores a buffer with all the pixels that need to be updated
         buffer to_update;
-        int to_update_count;
+        char to_update_count;
+        buffer to_update_count_buf;
         // How many times this chunk has been iterated
         int iteration;
         // Handles chunk crossings. Each value is 0 or a buffer_value, with the position in swap_requests 
@@ -21,6 +22,7 @@ class Chunk {
         int chunk_x;
         int chunk_y;
         size_t buffer_index;
+        size_t to_update_count_index;
         int highest_speed = 1;
         Chunk(int x, int y,int size,CL* cl);
         buffer get_data();
@@ -29,6 +31,7 @@ class Chunk {
         int get_iteration();
         void iterate();
         void free();
+        buffer get_update_count_buf();
 };
 
 #endif
