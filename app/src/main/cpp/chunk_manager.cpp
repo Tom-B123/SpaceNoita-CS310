@@ -62,14 +62,14 @@ buffer ChunkManager::get_render_buffer() {
 
 void ChunkManager::render_chunk(CL* cl,Chunk* chunk) {
     // Tell the kernel the chunk's data and the chunk's position
-    cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->render_kernel);
+    cl->setArg(0,chunk->get_to_update(),chunk->to_update_index,cl->render_kernel);
     cl->setArg(1,chunk->chunk_x,cl->render_kernel);
     cl->setArg(2,chunk->chunk_y,cl->render_kernel);
 
     cl->setArg(4,camera.x,cl->render_kernel);
     cl->setArg(5,camera.y,cl->render_kernel);
 
-    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_data().data, chunk->buffer_index);
+    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_to_update().data, chunk->to_update_index);
     cl->enqueueKernel(chunk_size,chunk_size,cl->render_kernel);
     cl->enqueueRenderReadBuffer(world_width,world_height, render_buffer.data, render_buffer_index);
 }
@@ -82,14 +82,16 @@ void ChunkManager::update_chunks(CL* cl) {
 
         char materials[] = {'S','W','R',' '};
 
-        if (y == 0&&x==0 && chunk->get_iteration() % 3 == 0 && chunk->get_update_count() < 3000) {
+        if (y == 0 && x == 0 && chunk->get_iteration() == 0 && chunk->get_update_count() < 3000) {
             chunk->set_cell(chunk_size / 2,chunk_size / 4, 'S');
         }
+
         refresh_chunk(cl,chunk);
         
-        cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->process_kernel);
+        cl->setArg(0,chunk->get_to_update(),chunk->to_update_index,cl->process_kernel);
         cl->setArg(2,chunk->chunk_x,cl->process_kernel);
         cl->setArg(3,chunk->chunk_y,cl->process_kernel);
+        cl->setArg(10,chunk->get_chunk_data(),chunk->to_update_index,cl->process_kernel);
 
         for (int j = 0; j < chunk->highest_speed; j++) {
             // Create chunk_size/2 x chunk_size/2 tasks, each processing a 2x2 block.
@@ -107,7 +109,7 @@ void ChunkManager::update_chunks(CL* cl) {
 
         }
 
-        cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_data().data, chunk->buffer_index);
+        cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_to_update().data, chunk->to_update_index);
         render_chunk(cl,chunk);
         }
     }
@@ -115,7 +117,8 @@ void ChunkManager::update_chunks(CL* cl) {
 
 
 void ChunkManager::refresh_chunk(CL* cl,Chunk* chunk) {
-    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_data().data, chunk->buffer_index);
+    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_to_update().data, chunk->to_update_index);
+    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_chunk_data().data, chunk->chunk_data_index);
     cl->enqueueRenderWriteBuffer(4, 1, chunk->get_update_count_buf().data, chunk->to_update_count_index);
 }
 
@@ -128,7 +131,7 @@ void ChunkManager::input(InputState input_state) {
 
 void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
     cl->enqueueReadBuffer(chunk_size,4, swap_requests.data, swap_requests_index);
-    cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_data().data, chunk->buffer_index);
+    cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_to_update().data, chunk->to_update_index);
 
     // buffer_value tl = get_buffer(swap_requests,0,0);
     // buffer_value tr = get_buffer(swap_requests,0,1);
@@ -160,11 +163,11 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             if (neighbour) {
                 // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
                 buffer_value nv = {(char)pos,(char)(chunk_size-1-skip),'?'};
-                nv.material = get_buffer(neighbour->get_data(),pos,chunk_size-1-skip).material;
-                set_buffer(chunk->get_data(),pos,skip,nv);
+                nv.material = get_buffer(neighbour->get_to_update(),pos,chunk_size-1-skip).material;
+                set_buffer(chunk->get_to_update(),pos,skip,nv);
                 bv.x = pos;
                 bv.y = chunk_size-1-skip;
-                set_buffer(neighbour->get_data(),pos,chunk_size-1-skip,bv);
+                set_buffer(neighbour->get_to_update(),pos,chunk_size-1-skip,bv);
                 updated_neighbours[side] = neighbour;
             }
         }
@@ -187,11 +190,11 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             if (neighbour) {
                 // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
                 buffer_value nv = {(char)(skip),(char)pos,'?'};
-                nv.material = get_buffer(neighbour->get_data(),chunk_size-1-skip,pos).material;
-                set_buffer(chunk->get_data(),chunk_size-1-skip,pos,nv);
+                nv.material = get_buffer(neighbour->get_to_update(),chunk_size-1-skip,pos).material;
+                set_buffer(chunk->get_to_update(),chunk_size-1-skip,pos,nv);
                 bv.x = skip;
                 bv.y = pos;
-                set_buffer(neighbour->get_data(),skip,pos,bv);
+                set_buffer(neighbour->get_to_update(),skip,pos,bv);
                 updated_neighbours[side] = neighbour;
             }
         }
@@ -214,11 +217,11 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             if (neighbour) {
                 // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
                 buffer_value nv = {(char)pos,(char)skip,'?'};
-                nv.material = get_buffer(neighbour->get_data(),pos,skip).material;
-                set_buffer(chunk->get_data(),pos,chunk_size-1-skip,nv);
+                nv.material = get_buffer(neighbour->get_to_update(),pos,skip).material;
+                set_buffer(chunk->get_to_update(),pos,chunk_size-1-skip,nv);
                 bv.x = pos;
                 bv.y = skip;
-                set_buffer(neighbour->get_data(),pos,skip,bv);
+                set_buffer(neighbour->get_to_update(),pos,skip,bv);
                 updated_neighbours[side] = neighbour;
             }
         }
@@ -241,11 +244,11 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
             if (neighbour) {
                 // std::cout << chunk-> chunk_x << "," << chunk->chunk_y << " -> " <<neighbour->chunk_x << "," << neighbour->chunk_y << std::endl;
                 buffer_value nv = {(char)(chunk_size-1-skip),(char)pos,'?'};
-                nv.material = get_buffer(neighbour->get_data(),skip,pos).material;
-                set_buffer(chunk->get_data(),skip,pos,nv);
+                nv.material = get_buffer(neighbour->get_to_update(),skip,pos).material;
+                set_buffer(chunk->get_to_update(),skip,pos,nv);
                 bv.x = chunk_size-1-skip;
                 bv.y = pos;
-                set_buffer(neighbour->get_data(),chunk_size-1-skip,pos,bv);
+                set_buffer(neighbour->get_to_update(),chunk_size-1-skip,pos,bv);
                 updated_neighbours[side] = neighbour;
             }
         }
@@ -258,12 +261,12 @@ void ChunkManager::process_swap_requests(CL* cl,Chunk* chunk) {
     }
 
     cl->enqueueWriteBuffer(swap_requests.width, swap_requests.height, swap_requests.data, swap_requests_index);
-    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_data().data, chunk->buffer_index);
+    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_to_update().data, chunk->to_update_index);
 
     for (int i = 0; i < 4; i++) {
         Chunk* neighbour = updated_neighbours[i];
         if (neighbour) {
-            cl->enqueueWriteBuffer(chunk_size, chunk_size, neighbour->get_data().data, neighbour->buffer_index);
+            cl->enqueueWriteBuffer(chunk_size, chunk_size, neighbour->get_to_update().data, neighbour->to_update_index);
         }
     }
 }

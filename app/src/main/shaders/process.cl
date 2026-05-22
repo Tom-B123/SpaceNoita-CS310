@@ -178,19 +178,23 @@ __kernel void render(__global char* data,
     render_buffer[ry * width + rx] = val.material;
 }
 
-__kernel void process(__global char* to_update,int iteration, 
+__kernel void process(__global buffer_value* to_update,int iteration, 
         int chunk_x, int chunk_y, int chunk_size,
         int width, int height, int n_width, int n_height, 
-        __global unsigned int* to_update_count) {
+        __global unsigned int* to_update_count,
+        __global buffer_value* chunk_data) {
 
     int index = get_global_id(0);
+
+    printf("Index: %i\n",index);
+    /* return; */
 
     /* increase_active_count(to_update_count); */
     if (index == 0) {
         /* printf("Shader: Update count = %u\n",*to_update_count); */
     }
 
-    buffer_value val = get_buffer(to_update,index);
+    buffer_value val = to_update[index];
 
     int x = val.x; //index % (chunk_size/n_width);
     // Y -> index divided by width
