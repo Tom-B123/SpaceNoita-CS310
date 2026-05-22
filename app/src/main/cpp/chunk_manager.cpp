@@ -62,14 +62,15 @@ buffer ChunkManager::get_render_buffer() {
 
 void ChunkManager::render_chunk(CL* cl,Chunk* chunk) {
     // Tell the kernel the chunk's data and the chunk's position
-    cl->setArg(0,chunk->get_to_update(),chunk->to_update_index,cl->render_kernel);
+    cl->setArg(0,chunk->get_chunk_data(),chunk->chunk_data_index,cl->render_kernel);
     cl->setArg(1,chunk->chunk_x,cl->render_kernel);
     cl->setArg(2,chunk->chunk_y,cl->render_kernel);
 
     cl->setArg(4,camera.x,cl->render_kernel);
     cl->setArg(5,camera.y,cl->render_kernel);
 
-    cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_to_update().data, chunk->to_update_index);
+    refresh_chunk(cl, chunk);
+    // cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_chunk_data().data, chunk->chunk_data_index);
     cl->enqueueKernel(chunk_size,chunk_size,cl->render_kernel);
     cl->enqueueRenderReadBuffer(world_width,world_height, render_buffer.data, render_buffer_index);
 }
@@ -110,6 +111,7 @@ void ChunkManager::update_chunks(CL* cl) {
         }
 
         cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_to_update().data, chunk->to_update_index);
+        cl->enqueueReadBuffer(chunk_size,chunk_size, chunk->get_chunk_data().data, chunk->chunk_data_index);
         render_chunk(cl,chunk);
         }
     }

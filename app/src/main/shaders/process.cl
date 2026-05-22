@@ -25,21 +25,6 @@ void increase_active_count(volatile __global unsigned int* count) {
     atomic_inc(count);
 }
 
-void set_buffer(__global char* data, int index, buffer_value value) {
-    size_t offset = (index * BUFFER_RUN);
-
-    ((__global buffer_value* )data)[index] = value;
-}
-
-
-
-buffer_value get_buffer(__global char* data, int index) {
-    int offset = (index * BUFFER_RUN);
-
-    __global buffer_value* v = ((__global buffer_value*)(data + offset));
-    return *v;
-}
-
 __constant uchar material_properties[256] = {
     0,
 
@@ -58,90 +43,58 @@ __constant uchar material_weights[256] = {
     [MATERIAL_ROCK]  = 255,
 };
 
-
-/* void request_swap(buffer_value bv1, buffer_value bv2, int chunk_size, __global char* swap_requests) { */
-/*     int side = -1; */
-/*     buffer_value swap_value = {0,0,0}; */
-/*     if (bv1.material != MATERIAL_AIR && bv1.x >= chunk_size-1) {  */
-/*         swap_value = bv1;  */
-/*         side = 1;  */
-/*     } */
-/*     else if (bv2.material != MATERIAL_AIR && bv2.x >= chunk_size-1) {  */
-/*         swap_value = bv2;  */
-/*         side = 1;  */
-/*     } */
-/*     else if (bv1.material != MATERIAL_AIR && bv1.y >= chunk_size-1) {  */
-/*         swap_value = bv1;  */
-/*         side = 2;  */
-/*     } */
-/*     else if (bv2.material != MATERIAL_AIR && bv2.y >= chunk_size-1){  */
-/*         swap_value = bv2;  */
-/*         side = 2;  */
-/*     } */
-/**/
-/*     if (side > -1) { */
-/*         printf("Value: [%c] exitied on side: %i\n",swap_value.material,side); */
-/*     } */
-/* } */
-
-bool choice_swap(bool do_swap, __global char* to_update, bool valid_x, bool valid_y,
-    bool in_bounds, bool cond, int i1, int i2, int chunk_size) {
+bool choice_swap(bool do_swap, __global unsigned int* to_update_count,
+                __global buffer_value* to_update, 
+                __global buffer_value* chunk_data, 
+                bool valid_x, bool valid_y,bool in_bounds, bool cond, 
+                int i1, int i2, int chunk_size) {
     
     if (!in_bounds) {
-
-        // Delete both out of bounds cells, might lead to the material on the opposite side of the chunk getting deleted?
-        buffer_value bv1 = get_buffer(to_update,i1);
-
-        int side = -1;
-        /* buffer_value bv2 = get_buffer(to_update,i2); */
-        /* set_buffer(to_update,i2,bv2); */
-        
-        if (material_properties[bv1.material] & PROPERTY_POWDER) {
-
-            if (!valid_x){
-                if (bv1.x > chunk_size/2) {
-                    side = 1;
-                }
-                else {
-                    side = 3;
-                }
-            }
-            if (!valid_y) {
-                if (bv1.y > chunk_size/2) {
-                    side = 2;
-                }
-                else {
-                    side = 0;
-                }
-            }
-            if ((!valid_x || !valid_y) && side > -1) {
-                /* switch(side) { */
-                /*     case 0: printf("North exit!\n"); break; */
-                /*     case 1: printf("East exit!\n"); break; */
-                /*     case 2: printf("South exit!\n"); break; */
-                /*     case 3: printf("West exit!\n"); break; */
-                /* } */
-                if (side == 0 || side == 2) {
-                }   else {
-                }
-                /* bv1.material = MATERIAL_AIR; */
-            }
-        }
-
-        /* set_buffer(to_update,i1,bv1); */
+    /**/
+    /*     // Delete both out of bounds cells, might lead to the material on the opposite side of the chunk getting deleted? */
+    /*     buffer_value bv1 = chunk_data[i1]; */
+    /**/
+    /*     int side = -1; */
+    /**/
+    /*     if (material_properties[bv1.material] & PROPERTY_POWDER) { */
+    /**/
+    /*         if (!valid_x){ */
+    /*             if (bv1.x > chunk_size/2) { */
+    /*                 side = 1; */
+    /*             } */
+    /*             else { */
+    /*                 side = 3; */
+    /*             } */
+    /*         } */
+    /*         if (!valid_y) { */
+    /*             if (bv1.y > chunk_size/2) { */
+    /*                 side = 2; */
+    /*             } */
+    /*             else { */
+    /*                 side = 0; */
+/*             } */
+    /*         } */
+    /*         if ((!valid_x || !valid_y) && side > -1) { */
+    /*             if (side == 0 || side == 2) { */
+    /*             }   else { */
+    /*             } */
+    /*         } */
+    /*     } */
+    /**/
         return false;
     }
     else if (do_swap && cond) {
         char tmp;
-        buffer_value val1 = get_buffer(to_update,i1);
-        buffer_value val2 = get_buffer(to_update,i2);
-        
+        buffer_value val1 = chunk_data[i1]; //get_buffer(to_update,i1);
+        buffer_value val2 = chunk_data[i2]; //get_buffer(to_update,i2);
+
         tmp = val1.material;
         val1.material = val2.material;
         val2.material = tmp;
 
-        set_buffer(to_update,i1,val1);
-        set_buffer(to_update,i2,val2);
+        chunk_data[i1] = val1;
+        chunk_data[i2] = val2;
+
         return true;
     }
     return false;
@@ -156,7 +109,7 @@ uint randint(int iteration, int x, int y) {
     return bit;
 }
 
-__kernel void render(__global char* data, 
+__kernel void render(__global buffer_value* data, 
     int chunk_x, int chunk_y, int chunk_size,
     int camera_x, int camera_y,
     int width, int height,
@@ -166,7 +119,7 @@ __kernel void render(__global char* data,
 
     /* if (index == 0) printf("kernel width: %i\n",width); */
 
-    buffer_value val = get_buffer(data,index);
+    buffer_value val = data[index];
 
     int x = val.x;//index % chunk_size;
     int y = val.y;//index / chunk_size;
@@ -178,6 +131,12 @@ __kernel void render(__global char* data,
     render_buffer[ry * width + rx] = val.material;
 }
 
+void add_update(int index, __global buffer_value* to_update, __global unsigned int* to_update_count,
+                int nx, int ny) {
+    to_update[index].x = nx;
+    to_update[index].y = ny;
+}
+
 __kernel void process(__global buffer_value* to_update,int iteration, 
         int chunk_x, int chunk_y, int chunk_size,
         int width, int height, int n_width, int n_height, 
@@ -186,18 +145,9 @@ __kernel void process(__global buffer_value* to_update,int iteration,
 
     int index = get_global_id(0);
 
-    printf("Index: %i\n",index);
-    /* return; */
-
-    /* increase_active_count(to_update_count); */
-    if (index == 0) {
-        /* printf("Shader: Update count = %u\n",*to_update_count); */
-    }
-
     buffer_value val = to_update[index];
 
     int x = val.x; //index % (chunk_size/n_width);
-    // Y -> index divided by width
     int y = val.y; //index / (chunk_size/n_height);
 
     bool left_priority = randint(iteration,x + chunk_x * chunk_size,y + chunk_y * chunk_size) % 64 > 31;
@@ -205,11 +155,7 @@ __kernel void process(__global buffer_value* to_update,int iteration,
     x = (x * n_width) + (iteration%n_width);
     y = (y * n_height) + (iteration%n_height);
 
-
-    int ox = chunk_x * chunk_size;
-    int oy = chunk_y * chunk_size * width;
-
-    int offset = 0;//ox+oy;
+    int offset = 0;
 
     int rotation_step = (iteration) % 3600;
     int rotation_direction = ((iteration) / 3600) % 4;
@@ -250,15 +196,15 @@ __kernel void process(__global buffer_value* to_update,int iteration,
         tmp = width; width = height; height = tmp;
     }
 
-    int properties1 = material_properties[get_buffer(to_update,index1).material];
-    int properties2 = material_properties[get_buffer(to_update,index2).material];
-    int properties3 = material_properties[get_buffer(to_update,index3).material];
-    int properties4 = material_properties[get_buffer(to_update,index4).material];
+    int properties1 = material_properties[chunk_data[index1].material];
+    int properties2 = material_properties[chunk_data[index2].material];
+    int properties3 = material_properties[chunk_data[index3].material];
+    int properties4 = material_properties[chunk_data[index4].material];
 
-    int weight1 = material_weights[get_buffer(to_update,index1).material];
-    int weight2 = material_weights[get_buffer(to_update,index2).material];
-    int weight3 = material_weights[get_buffer(to_update,index3).material];
-    int weight4 = material_weights[get_buffer(to_update,index4).material];
+    int weight1 = material_weights[chunk_data[index1].material];
+    int weight2 = material_weights[chunk_data[index2].material];
+    int weight3 = material_weights[chunk_data[index3].material];
+    int weight4 = material_weights[chunk_data[index4].material];
 
     char tmp;
     bool moved = false;
@@ -268,9 +214,10 @@ __kernel void process(__global buffer_value* to_update,int iteration,
     // Compare [' ] and [. ]
     moved |=choice_swap(
             true,
+            to_update_count,
             to_update,
+            chunk_data,
             valid_x,valid_y,
-            // Compare [. ] and [ ']
             y < chunk_size - 1 && y >= 0,
             properties1 & PROPERTY_POWDER && 
             !(properties3 & PROPERTY_SOLID) && 
@@ -279,12 +226,16 @@ __kernel void process(__global buffer_value* to_update,int iteration,
             index3,
             chunk_size
     );
+    if (moved) {
+        add_update(index,to_update,to_update_count,x,y+1);
+    }
     // Compare [ '] and [ .]
     moved |=choice_swap(
             true,
+            to_update_count,
             to_update,
+            chunk_data,
             valid_x,valid_y,
-            // Compare [. ] and [ ']
             y < chunk_size - 1 && y >= 0,
             properties2 & PROPERTY_POWDER && 
             !(properties4 & PROPERTY_SOLID) && 
@@ -293,12 +244,17 @@ __kernel void process(__global buffer_value* to_update,int iteration,
             index4,
             chunk_size
     );
+    if (moved) {
+        add_update(index,to_update,to_update_count,x+1,y+1);
+    }
     if (!moved) {
+        // Compare [' ] and [ .]
         moved |= choice_swap(
                 left_priority,
+                to_update_count,
                 to_update,
+                chunk_data,
                 valid_x,valid_y,
-                // Compare [' ] and [ .]
                 x < chunk_size-1 && 
                 y  < chunk_size - 1 && y >= 0,
                 properties1 & PROPERTY_POWDER && 
@@ -309,12 +265,17 @@ __kernel void process(__global buffer_value* to_update,int iteration,
                 chunk_size
         );
     }
+    if (moved) {
+        add_update(index,to_update,to_update_count,x+1,y+1);
+    }
     if (!moved) {
+        // Compare [ '] and [. ]
         moved |=choice_swap(
                 !left_priority,
+                to_update_count,
                 to_update,
+                chunk_data,
                 valid_x,valid_y,
-                // Compare [. ] and [ ']
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 && y >= 0,
                 properties2 & PROPERTY_POWDER && 
@@ -325,13 +286,17 @@ __kernel void process(__global buffer_value* to_update,int iteration,
                 chunk_size
         );
     }
+    if (moved) {
+        add_update(index,to_update,to_update_count,x,y+1);
+    }
     if (!moved) {
         // Compare [' ] and [ ']
         moved |=choice_swap(
                 left_priority,
+                to_update_count,
                 to_update,
+                chunk_data,
                 valid_x,valid_y,
-                // Compare [' ] and [ ']
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 && y >= 0,
                 properties1 & PROPERTY_LIQUID && 
@@ -342,12 +307,17 @@ __kernel void process(__global buffer_value* to_update,int iteration,
                 chunk_size
         );
     }
+    if (moved) {
+        add_update(index,to_update,to_update_count,x+1,y);
+    }
     if (!moved) {
+        // Compare [ '] and [' ]
         moved |= choice_swap(
                 !left_priority,
+                to_update_count,
                 to_update,
+                chunk_data,
                 valid_x,valid_y,
-                // Compare [ '] and [' ]
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 && y >= 0,
                 properties2 & PROPERTY_LIQUID && 
@@ -358,12 +328,17 @@ __kernel void process(__global buffer_value* to_update,int iteration,
                 chunk_size
         );
     }
+    if (moved) {
+        add_update(index,to_update,to_update_count,x,y);
+    }
     if (!moved) {
+        // Compare [. ] and [ .]
         moved |=choice_swap(
                 left_priority,
+                to_update_count,
                 to_update,
+                chunk_data,
                 valid_x,valid_y,
-                // Compare [. ] and [ .]
                 x < chunk_size - 1 && 
                 y < chunk_size - 1 ,
                 properties3 & PROPERTY_LIQUID && 
@@ -374,12 +349,17 @@ __kernel void process(__global buffer_value* to_update,int iteration,
                 chunk_size
         );
     }
+    if (moved) {
+        add_update(index,to_update,to_update_count,x+1,y+1);
+    }
     if (!moved) {
+        // Compare [ .] and [. ]
         moved |=choice_swap(
                 !left_priority,
+                to_update_count,
                 to_update,
+                chunk_data,
                 valid_x,valid_y,
-                // Compare [ .] and [. ]
                 x < chunk_size - 1 && 
                 y >= 0 && y < chunk_size - 1,
                 properties4 & PROPERTY_LIQUID && 
@@ -389,5 +369,8 @@ __kernel void process(__global buffer_value* to_update,int iteration,
                 index3,
                 chunk_size
         );
+    }
+    if (moved) {
+        add_update(index,to_update,to_update_count,x,y+1);
     }
 }

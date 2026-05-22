@@ -30,6 +30,7 @@ buffer Chunk::get_chunk_data() {
 
 void Chunk::set_cell(char x, char y, char val) {
     set_buffer(to_update, get_update_count(), {x,y,val});
+    set_buffer(chunk_data, x,y, {x,y,val});
     increment_update_count();
 }
 
