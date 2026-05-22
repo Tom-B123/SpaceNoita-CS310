@@ -80,9 +80,11 @@ void ChunkManager::update_chunks(CL* cl) {
         
         Chunk* chunk = get_chunk(x,y);
 
-        // std::cout << "Count: " << chunk->get_update_count() << std::endl;
-        chunk->get_update_count();
-        // chunk->increment_update_count();
+        std::cout << "Count: " << chunk->get_update_count() << std::endl;
+        chunk->increment_update_count();
+        chunk->increment_update_count();
+        chunk->increment_update_count();
+        cl->enqueueRenderWriteBuffer(4, 1, chunk->get_update_count_buf().data, chunk->to_update_count_index);
 
         char materials[] = {'S','W','R',' '};
 

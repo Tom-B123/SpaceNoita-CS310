@@ -35,17 +35,10 @@ buffer Chunk::get_update_count_buf() {
 }
 
 int Chunk::get_update_count() {
-    char* raw_data = to_update_count_buf.data;
-
-    for (int i = 0; i < 4; i++) {
-        std::cout << "Raw: " << (unsigned int)raw_data[i] << std::endl;
-    }
-
-    int out = 0;
+    unsigned int out = 0;
     for (int i = 3; i >= 0; i--) {
         out <<= 8;
-        out += (unsigned int)(raw_data[i]);
-        std::cout << "Counted " << (unsigned int)(raw_data[i]) << " Giving: " << out << std::endl;
+        out += (unsigned char)(to_update_count_buf.data[i]);
     }
     return out;
 }
@@ -54,19 +47,23 @@ void Chunk::increment_update_count() {
     unsigned int update_count = get_update_count();
     update_count++;
     
-    for (int i = 3; i >= 0; i--) {
-        to_update_count_buf.data[i] = update_count & 0b11111111;
-        std::cout << "Added " << (update_count & 0b11111111) << " Giving: " << (unsigned int)to_update_count_buf.data[i] << std::endl;
+
+    for (int i = 0; i < 4; i++) {
+        to_update_count_buf.data[i] = update_count & 0xFF;
         update_count >>= 8;
     }
+
 }
 void Chunk::decrement_update_count() {
-    int update_count = get_update_count();
+    unsigned int update_count = get_update_count();
     update_count--;
-    for (int i = 3; i >= 0; i--) {
-        to_update_count_buf.data[i] = update_count & 0b11111111;
+    
+
+    for (int i = 0; i < 4; i++) {
+        to_update_count_buf.data[i] = update_count & 0xFF;
         update_count >>= 8;
     }
+
 }
 void Chunk::iterate() {
     iteration++;
