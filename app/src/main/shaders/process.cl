@@ -187,7 +187,7 @@ __kernel void process(__global char* to_update,int iteration,
 
     increase_active_count(to_update_count);
     if (index == 0) {
-        printf("Update count: %u\n",*to_update_count);
+        printf("Shader: Update count = %u\n",*to_update_count);
     }
 
     buffer_value val = get_buffer(to_update,index);

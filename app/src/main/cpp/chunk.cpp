@@ -33,6 +33,16 @@ buffer Chunk::get_update_count_buf() {
     return to_update_count_buf;
 }
 
+int Chunk::get_update_count() {
+    char* raw_data = to_update_count_buf.data;
+    int out = 0;
+    for (int i = 3; i > 0; i--) {
+        out += (unsigned int)(raw_data[i]);
+        out <<= 8;
+    }
+    return out;
+}
+
 void Chunk::iterate() {
     iteration++;
 }

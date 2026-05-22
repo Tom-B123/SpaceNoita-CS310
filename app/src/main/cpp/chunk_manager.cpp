@@ -97,9 +97,12 @@ void ChunkManager::update_chunks(CL* cl) {
             cl->setArg(9,chunk->get_update_count_buf(),chunk->to_update_count_index,cl->process_kernel);
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
 
+            cl->enqueueRenderReadBuffer(4,1, chunk->get_update_count_buf().data, chunk->to_update_count_index);
+            std::cout << "C++: Update count = " << chunk->get_update_count() << std::endl;
+
             chunk->iterate();
 
-            process_swap_requests(cl,chunk);
+            // process_swap_requests(cl,chunk);
 
         }
 

@@ -32,6 +32,7 @@ class Chunk {
         void iterate();
         void free();
         buffer get_update_count_buf();
+        int get_update_count();
 };
 
 #endif
