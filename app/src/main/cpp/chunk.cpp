@@ -24,7 +24,8 @@ buffer Chunk::get_data() {
 }
 
 void Chunk::set_cell(char x, char y, char val) {
-    set_buffer(to_update, x, y, {x,y,val});
+    set_buffer(to_update, get_update_count(), {x,y,val});
+    increment_update_count();
 }
 
 int Chunk::get_iteration() {
@@ -52,8 +53,8 @@ void Chunk::increment_update_count() {
         to_update_count_buf.data[i] = update_count & 0xFF;
         update_count >>= 8;
     }
-
 }
+
 void Chunk::decrement_update_count() {
     unsigned int update_count = get_update_count();
     update_count--;

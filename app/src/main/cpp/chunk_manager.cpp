@@ -80,21 +80,12 @@ void ChunkManager::update_chunks(CL* cl) {
         
         Chunk* chunk = get_chunk(x,y);
 
-        std::cout << "Count: " << chunk->get_update_count() << std::endl;
-        chunk->increment_update_count();
-        chunk->increment_update_count();
-        chunk->increment_update_count();
-        cl->enqueueRenderWriteBuffer(4, 1, chunk->get_update_count_buf().data, chunk->to_update_count_index);
-
         char materials[] = {'S','W','R',' '};
 
-        if (y == 0&&x==0 && chunk->get_iteration() < 3000) {
+        if (y == 0&&x==0 && chunk->get_iteration() % 3 == 0 && chunk->get_update_count() < 3000) {
             chunk->set_cell(chunk_size / 2,chunk_size / 4, 'S');
-            // chunk->set_cell(0,chunk_size / 2, 'R');
         }
         refresh_chunk(cl,chunk);
-
-        // chunk->get_update_count();
         
         cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->process_kernel);
         cl->setArg(2,chunk->chunk_x,cl->process_kernel);
@@ -104,7 +95,7 @@ void ChunkManager::update_chunks(CL* cl) {
             // Create chunk_size/2 x chunk_size/2 tasks, each processing a 2x2 block.
             cl->setArg(1,chunk->get_iteration(),cl->process_kernel);
             cl->setArg(9,chunk->get_update_count_buf(),chunk->to_update_count_index,cl->process_kernel);
-            cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
+            cl->enqueueKernel(chunk->get_update_count(), 1, cl->process_kernel);
 
             // Render read buffer because this is exactly 4 bytes (1 int) rather than regular data 
             // (which contain x,y,material etc, so many bytes per entry)
@@ -122,8 +113,10 @@ void ChunkManager::update_chunks(CL* cl) {
     }
 }
 
+
 void ChunkManager::refresh_chunk(CL* cl,Chunk* chunk) {
     cl->enqueueWriteBuffer(chunk_size, chunk_size, chunk->get_data().data, chunk->buffer_index);
+    cl->enqueueRenderWriteBuffer(4, 1, chunk->get_update_count_buf().data, chunk->to_update_count_index);
 }
 
 void ChunkManager::input(InputState input_state) {

@@ -192,9 +192,9 @@ __kernel void process(__global char* to_update,int iteration,
 
     buffer_value val = get_buffer(to_update,index);
 
-    int x = index % (chunk_size/n_width);
+    int x = val.x; //index % (chunk_size/n_width);
     // Y -> index divided by width
-    int y = index / (chunk_size/n_height);
+    int y = val.y; //index / (chunk_size/n_height);
 
     bool left_priority = randint(iteration,x + chunk_x * chunk_size,y + chunk_y * chunk_size) % 64 > 31;
 

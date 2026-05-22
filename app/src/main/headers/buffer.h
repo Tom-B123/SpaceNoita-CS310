@@ -25,6 +25,7 @@ buffer init_buf(int width, int height,char default_val);
 buffer init_render_buf(int width, int height,char default_val);
 
 void set_buffer(buffer buf, int x, int y,buffer_value data);
+void set_buffer(buffer buf, size_t index,buffer_value data);
 buffer_value get_buffer(buffer buf, int x, int y);
 
 

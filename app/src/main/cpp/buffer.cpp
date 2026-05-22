@@ -47,9 +47,11 @@ buffer init_render_buf(int width, int height,char default_val) {
  *  Means that the meaning of each byte is clear and consistent.
  */
 void set_buffer(buffer buf, int x, int y,buffer_value data) {
-    size_t offset = BUFFER_RUN * (y * (buf.width) + x);
-
-    std::memcpy(buf.data + offset,&data,BUFFER_RUN);
+    size_t index = y * (buf.width) + x;
+    set_buffer(buf,index,data);
+}
+void set_buffer(buffer buf, size_t index,buffer_value data) {
+    std::memcpy(buf.data + index * BUFFER_RUN,&data,BUFFER_RUN);
 }
 
 /**

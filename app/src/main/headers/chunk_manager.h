@@ -65,6 +65,9 @@ class ChunkManager {
 
         void input(InputState input_state);
 
+        /**
+         *  Ensures the data and to_update_count buffers are up to data after CPU side changes
+         */
         void refresh_chunk(CL* cl,Chunk* chunk);
 
         // Go over the border of the chunk and if any swap requests occur, swap the right 2 cells 
