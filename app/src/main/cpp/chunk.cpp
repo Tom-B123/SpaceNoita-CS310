@@ -8,9 +8,10 @@ Chunk::Chunk(int x, int y,int size, CL* cl) :
     to_update = init_buf(size, size, ' ');
     // This is an unsigned int value, so stored as 4 bytes.
     //                         1 256 65536  16777216
-    char raw_update_count[] = {0,0,  0,     0};
-    to_update_count_buf = {4,1,raw_update_count};
+    // char raw_update_count[] = {0,0,  0,     0};
+    to_update_count_buf = {4,1,new char[]{0,0,0,0}};
     to_update_count_index = cl->makeRenderBuffer(to_update_count_buf);
+
 
     buffer_index = cl->makeBuffer(to_update);
     highest_speed = 1;
@@ -35,14 +36,38 @@ buffer Chunk::get_update_count_buf() {
 
 int Chunk::get_update_count() {
     char* raw_data = to_update_count_buf.data;
+
+    for (int i = 0; i < 4; i++) {
+        std::cout << "Raw: " << (unsigned int)raw_data[i] << std::endl;
+    }
+
     int out = 0;
-    for (int i = 3; i > 0; i--) {
-        out += (unsigned int)(raw_data[i]);
+    for (int i = 3; i >= 0; i--) {
         out <<= 8;
+        out += (unsigned int)(raw_data[i]);
+        std::cout << "Counted " << (unsigned int)(raw_data[i]) << " Giving: " << out << std::endl;
     }
     return out;
 }
 
+void Chunk::increment_update_count() {
+    unsigned int update_count = get_update_count();
+    update_count++;
+    
+    for (int i = 3; i >= 0; i--) {
+        to_update_count_buf.data[i] = update_count & 0b11111111;
+        std::cout << "Added " << (update_count & 0b11111111) << " Giving: " << (unsigned int)to_update_count_buf.data[i] << std::endl;
+        update_count >>= 8;
+    }
+}
+void Chunk::decrement_update_count() {
+    int update_count = get_update_count();
+    update_count--;
+    for (int i = 3; i >= 0; i--) {
+        to_update_count_buf.data[i] = update_count & 0b11111111;
+        update_count >>= 8;
+    }
+}
 void Chunk::iterate() {
     iteration++;
 }

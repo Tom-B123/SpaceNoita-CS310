@@ -23,6 +23,7 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
             //         n_chunk.set_cell(i,(chunk_size-5),'R');
             //     }
             // }
+
             row.push_back(
                 n_chunk
             );
@@ -79,6 +80,10 @@ void ChunkManager::update_chunks(CL* cl) {
         
         Chunk* chunk = get_chunk(x,y);
 
+        // std::cout << "Count: " << chunk->get_update_count() << std::endl;
+        chunk->get_update_count();
+        // chunk->increment_update_count();
+
         char materials[] = {'S','W','R',' '};
 
         if (y == 0&&x==0 && chunk->get_iteration() < 3000) {
@@ -86,6 +91,8 @@ void ChunkManager::update_chunks(CL* cl) {
             // chunk->set_cell(0,chunk_size / 2, 'R');
         }
         refresh_chunk(cl,chunk);
+
+        // chunk->get_update_count();
         
         cl->setArg(0,chunk->get_data(),chunk->buffer_index,cl->process_kernel);
         cl->setArg(2,chunk->chunk_x,cl->process_kernel);
@@ -97,9 +104,10 @@ void ChunkManager::update_chunks(CL* cl) {
             cl->setArg(9,chunk->get_update_count_buf(),chunk->to_update_count_index,cl->process_kernel);
             cl->enqueueKernel(chunk_size / 2, chunk_size / 2, cl->process_kernel);
 
+            // Render read buffer because this is exactly 4 bytes (1 int) rather than regular data 
+            // (which contain x,y,material etc, so many bytes per entry)
             cl->enqueueRenderReadBuffer(4,1, chunk->get_update_count_buf().data, chunk->to_update_count_index);
-            std::cout << "C++: Update count = " << chunk->get_update_count() << std::endl;
-
+            
             chunk->iterate();
 
             // process_swap_requests(cl,chunk);

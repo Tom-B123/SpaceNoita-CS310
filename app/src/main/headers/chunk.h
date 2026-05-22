@@ -33,6 +33,8 @@ class Chunk {
         void free();
         buffer get_update_count_buf();
         int get_update_count();
+        void increment_update_count();
+        void decrement_update_count();
 };
 
 #endif
