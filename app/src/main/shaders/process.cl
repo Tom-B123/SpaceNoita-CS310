@@ -14,6 +14,9 @@ typedef struct {
     char x;
     char y;
     char material;
+    char xvel;
+    char yvel;
+    char flags;
 }   buffer_value;
 
 #define BUFFER_RUN sizeof(buffer_value)
@@ -113,15 +116,15 @@ bool choice_swap(bool do_swap, __global char* data, bool valid_x, bool valid_y,
                 /*     case 3: printf("West exit!\n"); break; */
                 /* } */
                 if (side == 0 || side == 2) {
-                    set_buffer(swap_requests,bv1.x + chunk_size * side,bv1); 
+                    /* set_buffer(swap_requests,bv1.x + chunk_size * side,bv1);  */
                 }   else {
-                    set_buffer(swap_requests,bv1.y + chunk_size * side,bv1); 
+                    /* set_buffer(swap_requests,bv1.y + chunk_size * side,bv1);  */
                 }
-                bv1.material = MATERIAL_AIR;
+                /* bv1.material = MATERIAL_AIR; */
             }
         }
 
-        set_buffer(data,i1,bv1);
+        /* set_buffer(data,i1,bv1); */
         return false;
     }
     else if (do_swap && cond) {

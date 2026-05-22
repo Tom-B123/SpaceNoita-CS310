@@ -8,7 +8,7 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
 {
     camera = {0,0,1};
 
-    chunk_size = 16;
+    chunk_size = 64;
 
     render_buffer = init_render_buf(world_width,world_height,'?');
 
@@ -18,11 +18,11 @@ ChunkManager::ChunkManager(int n_world_width, int n_world_height, CL* cl) :
         std::vector<Chunk> row = std::vector<Chunk>();
         for (int x = 0; x < world_width; x+= chunk_size) {
             Chunk n_chunk(x / chunk_size, y / chunk_size,chunk_size,cl);
-            if(y + chunk_size >= world_height) {
-                for (int i = 0; i < chunk_size; i++) {
-                    n_chunk.set_cell(i,(chunk_size-5),'R');
-                }
-            }
+            // if(y + chunk_size >= world_height) {
+            //     for (int i = 0; i < chunk_size; i++) {
+            //         n_chunk.set_cell(i,(chunk_size-5),'R');
+            //     }
+            // }
             row.push_back(
                 n_chunk
             );
@@ -81,7 +81,7 @@ void ChunkManager::update_chunks(CL* cl) {
 
         char materials[] = {'S','W','R',' '};
 
-        if (y == 0&&x==1 && chunk->get_iteration() < 3000) {
+        if (y == 0&&x==0 && chunk->get_iteration() < 3000) {
             chunk->set_cell(chunk_size / 2,chunk_size / 4, 'S');
             // chunk->set_cell(0,chunk_size / 2, 'R');
         }

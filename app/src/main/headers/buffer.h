@@ -13,6 +13,9 @@ struct buffer_value {
     char x;
     char y;
     char material;
+    char xvel;
+    char yvel;
+    char flags;
 };
 
 

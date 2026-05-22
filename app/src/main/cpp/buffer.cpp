@@ -7,9 +7,12 @@ buffer init_buf(int width, int height,char default_val) {
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            data[BUFFER_RUN * (i*width + j) + 0] = j; //buffer_value {
-            data[BUFFER_RUN * (i*width + j) + 1] = i; //buffer_value {
-            data[BUFFER_RUN * (i*width + j) + 2] = default_val; //buffer_value {
+            data[BUFFER_RUN * (i*width + j) + 0] = j;             
+            data[BUFFER_RUN * (i*width + j) + 1] = i;
+            data[BUFFER_RUN * (i*width + j) + 2] = default_val;
+            data[BUFFER_RUN * (i*width + j) + 3] = 0;
+            data[BUFFER_RUN * (i*width + j) + 4] = 0;
+            data[BUFFER_RUN * (i*width + j) + 5] = 0;
         }
     }
 

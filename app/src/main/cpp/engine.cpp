@@ -3,6 +3,7 @@
 #include "buffer.h"
 #include "chunk_manager.h"
 #include "graphics.h"
+#include <chrono>
 
 Engine::Engine(int world_width, int world_height,
         CL* n_cl, GameWindow* n_window) : 
@@ -41,10 +42,12 @@ int Engine::main_loop() {
     cl->setArg(6, render_buf.width,cl->render_kernel);
     cl->setArg(7, render_buf.height,cl->render_kernel);
 
+    long target_fps = 60;
+    long target_frame_time = 1000000 / target_fps;
 
     // Main loop, 
     while (window->is_open()) {
-        
+        auto start = std::chrono::high_resolution_clock::now();
         // Update the render buffer by processing each chunk
         chunk_manager.update_chunks(cl);
 
@@ -58,7 +61,11 @@ int Engine::main_loop() {
 
         // Take user inputs
         input();
+        auto end = std::chrono::high_resolution_clock::now();
 
+        long delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
+        if (delta < target_frame_time) Sleep((target_frame_time - delta) / 1000);
     }
 
     std::cout << "Exited main loop" << std::endl;
