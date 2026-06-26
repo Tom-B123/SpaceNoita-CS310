@@ -3,6 +3,7 @@
 // Order is important for these 2!
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
+#include <cstdlib>
 
 std::string find_shader_file(std::string shader) {
     std::vector<std::string> search_paths = {
@@ -60,6 +61,14 @@ GLuint compile_shader(const char* source, GLenum type) {
 }
 
 char* update_step(char* render_buffer) {
+    char choices[4] = {'S','s','W','O'};
+
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        for (int x = 0; x < WORLD_WIDTH; x++) {
+            char material = choices[std::rand() & 0b11];
+            render_buffer[y * WORLD_WIDTH + x] = material;
+        }
+    }
     return render_buffer;
 }
 
@@ -76,6 +85,26 @@ int main(){
     GLuint shader_program;
 
     float* colours = new float[256 * 3];
+
+    for (int material = 0; material < 256; material++) {
+        int r;
+        int g;
+        int b;
+
+        switch (material) {
+            case 'S':
+                r=255;g=255;b=0;break;
+            case 'W':
+                r=0;g=0;b=255;break;
+            case 's':
+                r=200;g=200;b=200;break;
+            case 'O':
+                r=128;g=0;b=0;break;
+        }
+        colours[3 * material + 0] = r;
+        colours[3 * material + 1] = g;
+        colours[3 * material + 2] = b;
+    }
 
     // ==================== Initialise window ======================
 
@@ -105,8 +134,6 @@ int main(){
     glewInit();
 
     // =========================== Initialise buffers ===============
-
-
 
     // Create a VBO to hold our pixel data (for PBO async transfer - optional)
     glGenBuffers(1, &pixel_vbo);
@@ -185,7 +212,7 @@ int main(){
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vertex_vbo);  // Different from pixel_vbo
     glBindVertexArray(vao);
-glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Position attribute
@@ -202,6 +229,15 @@ glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
 
     // Create the world as 1 byte per pixel
     char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
+
+    char choices[4] = {'S','s','W','O'};
+
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        for (int x = 0; x < WORLD_WIDTH; x++) {
+            char material = choices[std::rand() & 0b11];
+            render_buffer[y * WORLD_WIDTH + x] = material;
+        }
+    }
 
     // =============== Main Loop ===============================
 
