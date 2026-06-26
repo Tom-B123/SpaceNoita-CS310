@@ -59,6 +59,10 @@ GLuint compile_shader(const char* source, GLenum type) {
     return shader;
 }
 
+char* update_step(char* render_buffer) {
+    return render_buffer;
+}
+
 int main(){
     GLFWwindow* window;
     std::string vertexShaderSource;
@@ -194,6 +198,11 @@ glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
 
     glBindVertexArray(0);  // Unbind
 
+    // =============== Engine setup ============================
+
+    // Create the world as 1 byte per pixel
+    char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
+
     // =============== Main Loop ===============================
 
     while (!glfwWindowShouldClose(window)) {
@@ -208,6 +217,13 @@ glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
         if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
+
+        render_buffer = update_step(render_buffer);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 
+                GL_RED, GL_UNSIGNED_BYTE, render_buffer);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     // =============== Cleanup =================================
 
