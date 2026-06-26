@@ -1,22 +1,32 @@
 {
-    {
+    "S":{
         "name":"Sand",
         "colour":"#FFFF00",
-        "density":"1500"
+        "density":"1500",
+        "state":"powder"
     },
-    {
+    "W":{
         "name":"Water",
         "colour":"#0000FF",
-        "density":"1000"
+        "density":"1000",
+        "state":"liquid"
     },
-    {
+    "O":{
+        "name":"Oil",
+        "colour":"#330000",
+        "density":"900",
+        "state":"liquid"
+    },
+    " ":{
         "name":"Air",
         "colour":"#FFFF00",
-        "density":"1.2"
+        "density":"2",
+        "state":"gas"
     },
-    {
+    "s":{
         "name":"Steam",
         "colour":"#FFFF00",
-        "density":"0.6"
+        "density":"1",
+        "state":"gas"
     }
 }

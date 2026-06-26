@@ -1,6 +1,7 @@
 CompileFlags:
   Add: 
     - -IC:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers
+    - -IC:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/headers/include
   Remove: 
     - -gen-cdb-fragment-path
     - -fcolor-diagnostics

@@ -8,6 +8,7 @@ plugins {
 application {
     source.from(file("src/main/cpp"))
     privateHeaders.from(file("src/main/headers"))
+    privateHeaders.from(file("src/main/headers/include"))
     targetMachines.add(machines.windows.x86_64)
 }
 

@@ -1,9 +1,21 @@
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/filereadstream.h"
+
 #include "app.h"
 
 // Order is important for these 2!
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
 #include <cstdlib>
+// Add this before including RapidJSON
+
+#include <fstream>
+#include <iostream>
 
 std::string find_shader_file(std::string shader) {
     std::vector<std::string> search_paths = {
@@ -61,14 +73,6 @@ GLuint compile_shader(const char* source, GLenum type) {
 }
 
 char* update_step(char* render_buffer) {
-    char choices[4] = {'S','s','W','O'};
-
-    for (int y = 0; y < WORLD_HEIGHT; y++) {
-        for (int x = 0; x < WORLD_WIDTH; x++) {
-            char material = choices[std::rand() & 0b11];
-            render_buffer[y * WORLD_WIDTH + x] = material;
-        }
-    }
     return render_buffer;
 }
 
@@ -85,6 +89,33 @@ int main(){
     GLuint shader_program;
 
     float* colours = new float[256 * 3];
+
+
+    // Read the entire file into a string
+    std::string location = find_shader_file("../cpp/materials.json");
+
+    std::cout << location << std::endl;
+
+    FILE* fp = fopen(location.c_str(), "r");
+
+    // Use a FileReadStream to
+      // read the data from the file
+    char readBuffer[65536];
+    rapidjson::FileReadStream is(fp, readBuffer,
+                                 sizeof(readBuffer));
+
+    // Parse the JSON data 
+      // using a Document object
+    rapidjson::Document d;
+    d.ParseStream(is);
+
+    // Close the file
+    fclose(fp);
+
+    rapidjson::Value& sand = d["S"];
+    std::cout << sand.FindMember("state")->value.GetString() << std::endl;
+    // std::cout << sand["density"].GetInt() << std::endl;
+    // Access the data in the JSON document
 
     for (int material = 0; material < 256; material++) {
         int r;
