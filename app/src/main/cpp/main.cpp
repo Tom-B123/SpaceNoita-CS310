@@ -104,21 +104,21 @@ int main(){
 
 
 
-    // // Create a VBO to hold our pixel data (for PBO async transfer - optional)
-    // glGenBuffers(1, &pixel_vbo);
-    // glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixel_vbo);
-    // glBufferData(GL_PIXEL_UNPACK_BUFFER, WORLD_WIDTH * WORLD_HEIGHT * sizeof(char), 
-    //         NULL, GL_DYNAMIC_DRAW);
-    // glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);  // Unbind for now
-    //
-    // // Create a texture to display
-    // glGenTextures(1, &texture);
-    // glBindTexture(GL_TEXTURE_2D, texture);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, WORLD_WIDTH, WORLD_HEIGHT, 0, 
-    //         GL_RED, GL_UNSIGNED_BYTE, NULL);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // glBindTexture(GL_TEXTURE_2D, 0);
+    // Create a VBO to hold our pixel data (for PBO async transfer - optional)
+    glGenBuffers(1, &pixel_vbo);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixel_vbo);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, WORLD_WIDTH * WORLD_HEIGHT * sizeof(char), 
+            NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);  // Unbind for now
+
+    // Create a texture to display
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, WORLD_WIDTH, WORLD_HEIGHT, 0, 
+            GL_RED, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     vertexShaderSource = get_shader_src("vertex.vert");
     fragmentShaderSource = get_shader_src("fragment.frag");
@@ -131,7 +131,6 @@ int main(){
         std::cout << "Failed to locate the fragment shader!";
         return -1;
     }
-    // std::cout << vertexShaderSource << std::endl << std::endl << fragmentShaderSource << std::endl;
 
     // Compile shaders with error checking
     GLuint vertexShader = compile_shader(vertexShaderSource.c_str(), GL_VERTEX_SHADER);
@@ -142,59 +141,81 @@ int main(){
         return -1;
     }
 
-    // shader_program = glCreateProgram();
-    // glAttachShader(shader_program, vertexShader);
-    // glAttachShader(shader_program, fragmentShader);
-    // glLinkProgram(shader_program);
-    //
-    // // Check linking
-    // GLint success;
-    // glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    // if (!success) {
-    //     char infoLog[4096];
-    //     glGetProgramInfoLog(shader_program, 4096, NULL, infoLog);
-    //     fprintf(stderr, "Shader linking failed: %s\n", infoLog);
-    //     return -1;
-    // }
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertexShader);
+    glAttachShader(shader_program, fragmentShader);
+    glLinkProgram(shader_program);
+
+    // Check linking
+    GLint success;
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[4096];
+        glGetProgramInfoLog(shader_program, 4096, NULL, infoLog);
+        fprintf(stderr, "Shader linking failed: %s\n", infoLog);
+        return -1;
+    }
 
     glDeleteShader(vertexShader);
-    // glDeleteShader(fragmentShader);
+    glDeleteShader(fragmentShader);
 
     // Magenta = undefined material colour
 
-    // glUseProgram(shader_program);
+    glUseProgram(shader_program);
 
-    // GLint coloursLoc = glGetUniformLocation(shader_program, "colours");
-    // if (coloursLoc == -1) {
-    //     fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
-    // } else {
-    //     glUniform1fv(coloursLoc, 256 * 3, colours);
-    // } 
-    // float vertices[] = {
-    //     // positions   // texture coords
-    //     -1.0f,  1.0f,  0.0f, 0.0f,  // top-left
-    //     -1.0f, -1.0f,  0.0f, 1.0f,  // bottom-left
-    //     1.0f, -1.0f,  1.0f, 1.0f,  // bottom-right
-    //     1.0f,  1.0f,  1.0f, 0.0f   // top-right
-    // };
-    //
-    // // Create VAO and VBO for the quad (different VBO!)
-    // glGenVertexArrays(1, &vao);
-    // glGenBuffers(1, &vertex_vbo);  // Different from pixel_vbo
-    // glBindVertexArray(vao);
-    // glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //
-    // // Position attribute
-    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    // glEnableVertexAttribArray(0);
-    //
-    // // Texture coord attribute
-    // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
-    //
-    // glBindVertexArray(0);  // Unbind
+    GLint coloursLoc = glGetUniformLocation(shader_program, "colours");
+    if (coloursLoc == -1) {
+        fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
+    } else {
+        glUniform1fv(coloursLoc, 256 * 3, colours);
+    } 
+    float vertices[] = {
+        // positions   // texture coords
+        -1.0f,  1.0f,  0.0f, 0.0f,  // top-left
+        -1.0f, -1.0f,  0.0f, 1.0f,  // bottom-left
+        1.0f, -1.0f,  1.0f, 1.0f,  // bottom-right
+        1.0f,  1.0f,  1.0f, 0.0f   // top-right
+    };
+
+    // Create VAO and VBO for the quad (different VBO!)
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vertex_vbo);  // Different from pixel_vbo
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // Texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);  // Unbind
+
+    // =============== Main Loop ===============================
+
+    // =============== Cleanup =================================
+
+    std::cout << "Cleanup" << std::endl;
+    // Clean up OpenGL resources
+    glDeleteBuffers(1, &pixel_vbo);
+    glDeleteBuffers(1, &vertex_vbo);
+    glDeleteTextures(1, &texture);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteProgram(shader_program);
+
+    // Destroy window
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
+
+    // Terminate GLFW
+    glfwTerminate();
 
     std::cout << "Exit" << std::endl;
+
     return 0;
 }
