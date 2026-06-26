@@ -181,7 +181,7 @@ int main(){
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vertex_vbo);  // Different from pixel_vbo
     glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
+glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Position attribute
@@ -196,6 +196,19 @@ int main(){
 
     // =============== Main Loop ===============================
 
+    while (!glfwWindowShouldClose(window)) {
+        glClear(GL_COLOR_BUFFER_BIT);
+        glUseProgram(shader_program);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+        if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+    }
     // =============== Cleanup =================================
 
     std::cout << "Cleanup" << std::endl;
