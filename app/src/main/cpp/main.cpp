@@ -45,6 +45,15 @@ GLuint compile_shader(const char* source, GLenum type) {
         char infoLog[512];
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
         fprintf(stderr, "Shader compilation failed: %s\n", infoLog);
+        switch (type) {
+            case GL_VERTEX_SHADER: 
+                std::cout << "Error in Vertex shader!";
+                break;
+            case GL_FRAGMENT_SHADER: 
+                std::cout << "Error in Fragment shader!";
+                break;
+        }
+        std::cout << std::endl;
         return 0;
     }
     return shader;
@@ -89,6 +98,8 @@ int main(){
 
     glewExperimental = GL_TRUE;
 
+    glewInit();
+
     // =========================== Initialise buffers ===============
 
 
@@ -111,14 +122,25 @@ int main(){
 
     vertexShaderSource = get_shader_src("vertex.vert");
     fragmentShaderSource = get_shader_src("fragment.frag");
+
+    if (vertexShaderSource.empty() || vertexShaderSource.data() == nullptr) {
+        std::cout << "Failed to locate the vertex shader!";
+        return -1;
+    }
+    if (fragmentShaderSource.empty() || fragmentShaderSource.data() == nullptr){
+        std::cout << "Failed to locate the fragment shader!";
+        return -1;
+    }
+    // std::cout << vertexShaderSource << std::endl << std::endl << fragmentShaderSource << std::endl;
+
     // Compile shaders with error checking
-    // GLuint vertexShader = compile_shader(vertexShaderSource.c_str(), GL_VERTEX_SHADER);
-    // GLuint fragmentShader = compile_shader(fragmentShaderSource.c_str(), GL_FRAGMENT_SHADER);
+    GLuint vertexShader = compile_shader(vertexShaderSource.c_str(), GL_VERTEX_SHADER);
+    GLuint fragmentShader = compile_shader(fragmentShaderSource.c_str(), GL_FRAGMENT_SHADER);
     //
-    // if (!vertexShader || !fragmentShader) {
-    //     fprintf(stderr, "Shader compilation failed\n");
-    //     return -1;
-    // }
+    if (!vertexShader || !fragmentShader) {
+        fprintf(stderr, "Shader compilation failed\n");
+        return -1;
+    }
 
     // shader_program = glCreateProgram();
     // glAttachShader(shader_program, vertexShader);
@@ -135,7 +157,7 @@ int main(){
     //     return -1;
     // }
 
-    // glDeleteShader(vertexShader);
+    glDeleteShader(vertexShader);
     // glDeleteShader(fragmentShader);
 
     // Magenta = undefined material colour
