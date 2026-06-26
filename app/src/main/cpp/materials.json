@@ -1,0 +1,22 @@
+{
+    {
+        "name":"Sand",
+        "colour":"#FFFF00",
+        "density":"1500"
+    },
+    {
+        "name":"Water",
+        "colour":"#0000FF",
+        "density":"1000"
+    },
+    {
+        "name":"Air",
+        "colour":"#FFFF00",
+        "density":"1.2"
+    },
+    {
+        "name":"Steam",
+        "colour":"#FFFF00",
+        "density":"0.6"
+    }
+}

@@ -65,3 +65,8 @@ buffer_value get_buffer(buffer buf, int x, int y) {
     std::memcpy(&v,buf.data + offset,BUFFER_RUN);
     return v;
 }
+
+void free_buffer(buffer buf) {
+    std::cout << "Freed buffer" << std::endl;
+    free(buf.data);
+}

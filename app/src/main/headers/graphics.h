@@ -23,24 +23,25 @@ class GameWindow {
         std::string vertexShaderSource;
         std::string fragmentShaderSource;
     public:
+        bool success;
         GameWindow(int n_width, int n_height);
         ~GameWindow() {
-            if (pixel_vbo) glDeleteBuffers(1,&pixel_vbo);
-            if (vertex_vbo) glDeleteBuffers(1,&vertex_vbo);
-            if (vao) glDeleteVertexArrays(1,&vao);
-            if (texture) glDeleteTextures(1,&texture);
-            if (shader_program) glDeleteProgram(shader_program);
+            std::cout << "destructor" << std::endl;
+            // Clean up OpenGL resources
+            glDeleteBuffers(1, &pixel_vbo);
+            glDeleteBuffers(1, &vertex_vbo);
+            glDeleteTextures(1, &texture);
+            glDeleteVertexArrays(1, &vao);
+            glDeleteProgram(shader_program);
 
+            // Destroy window
             if (window) {
                 glfwDestroyWindow(window);
                 window = nullptr;
             }
 
-            Sleep(100);
-            std::cout << "Terminating GL" << std::endl;
+            // Terminate GLFW
             glfwTerminate();
-            std::cout << "GL freed" << std::endl;
-            Sleep(100);
         }
         void set_colour(char material, float r, float g, float b); 
         GLuint compile_shader(const char* source, GLenum type);

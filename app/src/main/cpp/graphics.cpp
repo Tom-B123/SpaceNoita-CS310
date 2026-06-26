@@ -17,11 +17,12 @@ void draw(int width, int height, char* data) {
 }
 
 GameWindow::GameWindow(int n_width, int n_height) : 
-    width(n_width), height(n_height) 
+    width(n_width), height(n_height), window(nullptr)
     {
-    colours = new float[256 * 3];
-
-    glfwInit();
+    if (!glfwInit()) {
+        std::cout << "Error initialising glfw!" << std::endl;
+        return;
+    }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -31,14 +32,14 @@ GameWindow::GameWindow(int n_width, int n_height) :
 
     // Create fullscreen window
     window = glfwCreateWindow(mode->width, mode->height, "Sand Simulation", monitor, NULL);
-
+    
+    if (!window) {
+        std::cout << "Failed to create the window!" << std::endl;
+        return;
+    }
     glfwMakeContextCurrent(window);
 
     glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW\n");
-        return;
-    }
 
     // Create a VBO to hold our pixel data (for PBO async transfer - optional)
     glGenBuffers(1, &pixel_vbo);
@@ -79,6 +80,7 @@ GameWindow::GameWindow(int n_width, int n_height) :
         char infoLog[4096];
         glGetProgramInfoLog(shader_program, 4096, NULL, infoLog);
         fprintf(stderr, "Shader linking failed: %s\n", infoLog);
+        return;
     }
 
     glDeleteShader(vertexShader);
@@ -128,6 +130,8 @@ GameWindow::GameWindow(int n_width, int n_height) :
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);  // Unbind
+    
+
 }
 
 void GameWindow::set_colour(char material, float r, float g, float b) {
@@ -181,6 +185,10 @@ void GameWindow::refresh() {
 }
 
 bool GameWindow::is_open() {
+    if (!window) {
+        std::cout << "No window, crashing!" << std::endl;
+        return false;
+    }
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         close();
     }

@@ -6,28 +6,11 @@
 
 
 int main(){
-    int error;
-    {   
-        GameWindow window(WORLD_WIDTH,WORLD_HEIGHT);
-        {
-            CL cl = CL();
+    GameWindow window(WORLD_WIDTH,WORLD_HEIGHT);
 
-            Engine engine(WORLD_WIDTH, WORLD_HEIGHT, &cl,&window);
-
-            glfwSetWindowUserPointer(window.get_window(), &engine);
-            glfwSetKeyCallback(window.get_window(), Engine::keyCallback);
-
-            error = engine.main_loop();
-        }
+    while (window.is_open()) {
+        window.refresh();
     }
-    
-    std::cout << "Exiting with error: " << error << std::endl;
-
-    std::cout.flush();
-
-    TerminateProcess(GetCurrentProcess(),error);
-
-    std::cout << "Forced exit: " << error << std::endl;
-    
-    _exit(error);
+    Sleep(100);
+    Sleep(100);
 }

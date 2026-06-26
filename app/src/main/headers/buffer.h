@@ -29,4 +29,7 @@ void set_buffer(buffer buf, size_t index,buffer_value data);
 buffer_value get_buffer(buffer buf, int x, int y);
 
 
+
+void free_buffer(buffer buf);
+
 #endif

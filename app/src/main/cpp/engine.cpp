@@ -1,15 +1,15 @@
 #include "engine.h"
 #include "GLFW/glfw3.h"
+#include "app.h"
+#include "barebones_engine.h"
 #include "buffer.h"
 #include "chunk_manager.h"
 #include "graphics.h"
 #include <chrono>
 
 Engine::Engine(int world_width, int world_height,
-        CL* n_cl, GameWindow* n_window) : 
-    cl(n_cl),
+    GameWindow* n_window) : 
     window(n_window),
-    chunk_manager(ChunkManager(world_width,world_height,n_cl)),
     iteration(0)
 {
     // Tell the kernel to use 2x2 cells in margolous neighbourhood
@@ -23,24 +23,12 @@ Engine::Engine(int world_width, int world_height,
         false,
         false
     };
+    // Initialise the render buffer to all invalid cells
+    render_buffer = init_render_buf(world_width,world_height,'?');
+    barebones_engine = new BarebonesEngine(world_width,world_height);
 }
 
 int Engine::main_loop() {
-    // The buffer that the game world is rendered to.
-    buffer render_buf = chunk_manager.get_render_buffer();
-
-    // Update n times per tick
-    int iteration = 0;
-
-    // Set Process kernel arguments
-    cl->setArg(5, render_buf.width,cl->process_kernel);
-    cl->setArg(6, render_buf.height,cl->process_kernel);
-    cl->setArg(7, n_width,cl->process_kernel);
-    cl->setArg(8, n_height,cl->process_kernel);
-
-    // Set Render kernel arguments
-    cl->setArg(6, render_buf.width,cl->render_kernel);
-    cl->setArg(7, render_buf.height,cl->render_kernel);
 
     long target_fps = 60;
     long target_frame_time = 1000000 / target_fps;
@@ -48,13 +36,11 @@ int Engine::main_loop() {
     // Main loop, 
     while (window->is_open()) {
         auto start = std::chrono::high_resolution_clock::now();
-        // Update the render buffer by processing each chunk
-        chunk_manager.update_chunks(cl);
 
-        render_buf = chunk_manager.get_render_buffer();
-        
+        barebones_engine->mutate(render_buffer);
+
         // Display the new render buffer
-        window->update_texture(render_buf.data);
+        window->update_texture(render_buffer.data);
 
         window->refresh();
         window->draw();
@@ -91,5 +77,5 @@ void Engine::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 void Engine::input() {
-    chunk_manager.input(input_state);
+    // chunk_manager.input(input_state);
 }
