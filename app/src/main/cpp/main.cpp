@@ -75,7 +75,7 @@ char* to_bitstring(DataPoint* data_buffer,int x, int y) {
         char map = 0;
         for (int j = 0; j < 4; j++) {
             map <<= 1;
-            if (material_data[data_buffer[WORLD_WIDTH * (y + j / 2) + (x + j % 2)].material].density >= density) {
+            if (material_data[data_buffer[WORLD_WIDTH * (y + (j / 2)) + (x + (j % 2))].material].density >= density) {
                 map++;
             }
         }
