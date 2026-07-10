@@ -54,6 +54,7 @@ bool SHOW_MATERIAL_COLOURS = false;
 bool SHOW_RULES_DEBUG = false;
 bool SHOW_RULES = false;
 bool SHOW_BITSETS = false;
+bool SHOW_REORDERING = false;
 
 // Get the state integer / enum from a string
 int state_from_string(std::string state_string) {
@@ -68,7 +69,9 @@ int state_from_string(std::string state_string) {
  *  Get the 2x2 area around the x,y position. return 4 bitstrings, each one represents the material 
  *  in each cell compared to the density of the other 3.
  */
-char* to_bitstring(DataPoint* data_buffer,int x, int y) {
+char* to_bitstring(DataPoint* data_buffer,int x, int y,int offset) {
+    x += offset;
+    y += offset;
     char* data = new char[4];
     for (int i = 0; i < 4; i++) {
         int density = material_data[data_buffer[WORLD_WIDTH * (y + i / 2) + (x + i % 2)].material].density;
@@ -160,8 +163,7 @@ DataPoint* init_data_buffer(int w, int h) {
     return data_buffer;
 }
 
-char* update_step(char* render_buffer,DataPoint* data_buffer) {
-
+char* update_step(char* render_buffer,DataPoint* data_buffer,long step) {
 
     int counts[256] = {0};
     for (int y = 0; y < WORLD_HEIGHT; y++) {
@@ -175,7 +177,7 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
         for (int x = 0; x < WORLD_WIDTH / 2; x++) {
             // Convert the data to 4 bitstrings, which represent the 
             // denser and lighter cells compard to each [' , ',. , .]
-            char* data = to_bitstring(data_buffer, x*2, y*2);
+            char* data = to_bitstring(data_buffer, x*2, y*2,step%2);
             
             // Calculate the next result that each cell wants to acheive
             std::array<char,4> results = {0};
@@ -195,25 +197,42 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
                 order[i] |= ((char)material.state << 4);
             }
 
-            for (int i = 0; i < 4; i++) {
-                std::cout << (order[i] & 0b1111) << ",";
+            // Debug output
+            if (SHOW_REORDERING) {
+                for (int i = 0; i < 4; i++) {
+                    std::cout << (order[i] & 0b1111) << ",";
+                }
+                std::cout << std::endl;
+                for (int i = 0; i < 4; i++) {
+                    std::cout << std::bitset<8>(results[i]) << ",";
+                }
+                std::cout << " -> ";
             }
-            std::cout << std::endl;
-            for (int i = 0; i < 4; i++) {
-                std::cout << std::bitset<8>(results[i]) << ",";
-            }
-            std::cout << " -> ";
+            //
+            
+            // Sort the results so we process all of one state, then all of the next state.
             std::sort(results.begin(), results.end());
+            // Keep track of which cell is in which position, doesn't necessarly correspond exacly to 
+            // result's ordering.
             std::sort(order.begin(), order.end());
-            for (int i = 0; i < 4; i++) {
-                std::cout << std::bitset<8>(results[i]) << ",";
-            }
-            std::cout << std::endl;
-            for (int i = 0; i < 4; i++) {
-                std::cout << (order[i] & 0b1111) << ",";
-            }
-            std::cout << std::endl;
 
+            // Debug output
+            if (SHOW_REORDERING) {
+                for (int i = 0; i < 4; i++) {
+                    std::cout << std::bitset<8>(results[i]) << ",";
+                }
+                std::cout << std::endl;
+                for (int i = 0; i < 4; i++) {
+                    std::cout << (order[i] & 0b1111) << ",";
+                }
+                std::cout << std::endl;
+            }
+            //
+            
+            for (int i = 0; i < 4; i++) {
+                data_buffer[((2 * y)+i/2) * WORLD_WIDTH + ((2 * x)+i%2)].material = 
+                    data_buffer[(((y+1)%(WORLD_HEIGHT/2))*2 + (i / 2)) * WORLD_WIDTH + (x*2 + (i%2))].material;
+            }
             free(data);
         }
     }
@@ -657,8 +676,9 @@ int main(){
 
     // =============== Main Loop ===============================
 
+    unsigned long step = 0;
     while (!glfwWindowShouldClose(window)) {
-        Sleep(500);
+        Sleep(100);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(shader_program);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -671,7 +691,9 @@ int main(){
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        render_buffer = update_step(render_buffer,data_buffer);
+        render_buffer = update_step(render_buffer,data_buffer,step);
+
+        step++;
 
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 
