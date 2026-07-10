@@ -179,6 +179,7 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
             
             // Calculate the next result that each cell wants to acheive
             std::array<char,4> results = {0};
+            std::array<char,4> order = {0,1,2,3};
             for (int i = 0; i < 4; i++) {
                 Material material = material_data[data_buffer[(y*2 + (i / 2)) * WORLD_WIDTH + (x*2 + (i%2))].material];
                 // Only one of these will be non zero so we can sum them
@@ -191,15 +192,25 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
                 // Add the final 4 bits of the state to the result in the 1st 4 bits to allow us to sort 
                 // based on the state
                 results[i] |= ((char)material.state << 4);
+                order[i] |= ((char)material.state << 4);
             }
 
+            for (int i = 0; i < 4; i++) {
+                std::cout << (order[i] & 0b1111) << ",";
+            }
+            std::cout << std::endl;
             for (int i = 0; i < 4; i++) {
                 std::cout << std::bitset<8>(results[i]) << ",";
             }
             std::cout << " -> ";
             std::sort(results.begin(), results.end());
+            std::sort(order.begin(), order.end());
             for (int i = 0; i < 4; i++) {
                 std::cout << std::bitset<8>(results[i]) << ",";
+            }
+            std::cout << std::endl;
+            for (int i = 0; i < 4; i++) {
+                std::cout << (order[i] & 0b1111) << ",";
             }
             std::cout << std::endl;
 
