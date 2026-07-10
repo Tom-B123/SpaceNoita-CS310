@@ -19,7 +19,7 @@
     },
     " ":{
         "name":"Air",
-        "colour":"#FFFFFF",
+        "colour":"#003377",
         "density":2,
         "state":"gas"
     },
