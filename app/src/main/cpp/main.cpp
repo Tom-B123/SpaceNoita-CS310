@@ -1,3 +1,4 @@
+#include <bitset>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 
@@ -23,6 +24,8 @@ int LIQUID=1;
 int GAS=2;
 int SOLID=3;
 
+#define NUM_STATES 4
+
 // Information about a given material, from materials.json
 struct Material {
     char name[128];
@@ -34,9 +37,24 @@ struct Material {
 
 Material material_data[256] = {0};
 
+// Each rule is one byte, storing the resulting state in its corresponding initial state position
+// Lookup table stores 16 rules for stable/neutral rules for left and for  right configurations, 
+// but only 16 total will be expected.
+// Each state has unique rules.
+char rules[NUM_STATES * 3 * 16] = {0};
 
 bool SHOW_MATERIAL_COUNTS = false;
 bool SHOW_MATERIAL_COLOURS = false;
+bool SHOW_RULES = true;
+
+// Get the state integer / enum from a string
+int state_from_string(std::string state_string) {
+        if (!state_string.compare("powder"))      { return POWDER; }
+        else if (!state_string.compare("liquid")) { return LIQUID; }
+        else if (!state_string.compare("gas"))    { return GAS; }
+        else if (!state_string.compare("solid"))  { return SOLID; }
+        return -1;
+}
 
 std::string find_shader_file(std::string shader) {
     std::vector<std::string> search_paths = {
@@ -125,8 +143,7 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             DataPoint val = data_buffer[y*WORLD_WIDTH + x];
             if (y < WORLD_HEIGHT - 1) {
-                // std::cout << material_data[val.material].name << material_data[val.material].state << std::endl;
-                if (material_data[val.material].state >= 0) {
+                if (material_data[val.material].state == POWDER) {
                     DataPoint oth = data_buffer[(y+1)*WORLD_WIDTH + x];
                     if (!val.updated && 
                         !oth.updated && 
@@ -192,30 +209,118 @@ int main(){
 
 
     // Read the entire file into a string
-    std::string location = find_shader_file("../cpp/materials.json");
+    std::string materials_location = find_shader_file("../cpp/materials.json");
+    std::string rules_location = find_shader_file("../cpp/rules.json");
 
     // std::cout << location << std::endl;
 
-    FILE* fp = fopen(location.c_str(), "r");
+    FILE* materials_file = fopen(materials_location.c_str(), "r");
 
-    // Use a FileReadStream to
-      // read the data from the file
+    if (materials_file == nullptr) {
+        std::cerr << "Failed to locate materials.json!";
+        return -1;
+    }
+
+    // Use a FileReadStream to read the data from the file
     char readBuffer[65536];
-    rapidjson::FileReadStream is(fp, readBuffer,
+    rapidjson::FileReadStream materials_json(materials_file, readBuffer,
                                  sizeof(readBuffer));
 
-    // Parse the JSON data 
-      // using a Document object
-    rapidjson::Document d;
-    d.ParseStream(is);
+    // Parse the JSON data using a Document object
+    rapidjson::Document materials_document;
+    materials_document.ParseStream(materials_json);
 
-    // Close the file
-    fclose(fp);
+    fclose(materials_file);
 
+    FILE* rules_file = fopen(rules_location.c_str(), "r");
+
+    if (rules_file == nullptr) {
+        std::cerr << "Failed to locate rules.json!";
+        return -1;
+    }
+
+    char readBuffer2[65536];
+    rapidjson::FileReadStream rules_json(rules_file, readBuffer2,
+                                 sizeof(readBuffer2));
+
+    // Parse the JSON data using a Document object
+    rapidjson::Document rules_document;
+    rules_document.ParseStream(rules_json);
+
+    // Close the files
+    fclose(rules_file);
+
+    for (rapidjson::Value::ConstMemberIterator itr = 
+            rules_document.MemberBegin();
+            itr != rules_document.MemberEnd(); ++itr)
+    {
+        std::string state_string = itr->name.GetString();
+        int state = state_from_string(state_string);
+
+        // parse neutral state transitions
+        // These include stable states (don't need to change)
+        // These also include transitions that DON'T get affected by left / right priority
+        auto neutral = itr->value["neutral"].GetArray();
+        auto stable = itr->value["stable"].GetArray();
+        for (int i = 0; i < 16; i++) {
+            char start = -1;
+            char result = -1;
+            if (i < neutral.Size()) {
+                auto tmp = neutral[i].GetArray();
+                if (SHOW_RULES) {
+                    std::cout << 
+                        tmp[0].GetString() <<
+                        tmp[1].GetString() << ">>" <<
+                        tmp[4].GetString() <<
+                        tmp[5].GetString() << std::endl << 
+                        tmp[2].GetString() << 
+                        tmp[3].GetString() << ">>" <<
+                        tmp[6].GetString() <<
+                        tmp[7].GetString() << std::endl;
+                }
+                start = 0; result = 0;
+                for (int i = 0; i < 4; i++) {
+                    result <<= 1;
+                    start <<= 1;
+                    if (tmp[i].GetString()[0] == 'H') start++;
+                    if (tmp[i+4].GetString()[0] == 'H') result++;
+                }
+            }
+            if (SHOW_RULES && start > -1 && result > -1) {
+                std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+            }
+            start = -1; result = -1;
+            if (i < stable.Size()) {
+                auto tmp = stable[i].GetArray();
+                if (SHOW_RULES) {
+                    std::cout << 
+                        tmp[0].GetString() <<
+                        tmp[1].GetString() << ">>" <<
+                        tmp[0].GetString() <<
+                        tmp[1].GetString() << std::endl << 
+                        tmp[2].GetString() << 
+                        tmp[3].GetString() << ">>" <<
+                        tmp[2].GetString() <<
+                        tmp[3].GetString() << std::endl;
+                }
+                start = 0; result = 0;
+                for (int i = 0; i < 4; i++) {
+                    result <<= 1;
+                    start <<= 1;
+                    if (tmp[i].GetString()[0] == 'H') start++;
+                    if (tmp[i].GetString()[0] == 'H') result++;
+                }
+            }
+            if (SHOW_RULES && start > -1 && result > -1) {
+                std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+            }
+        }
+    }
 
     // Loop over all json elements
-    for (rapidjson::Value::ConstMemberIterator itr = d.MemberBegin();
-            itr != d.MemberEnd(); ++itr)
+    for (rapidjson::Value::ConstMemberIterator itr = 
+            materials_document.MemberBegin();
+            itr != materials_document.MemberEnd(); ++itr)
     {
         // Get each key, this is the material code as an ascii character
         char material_code = itr->name.GetString()[0];
@@ -232,12 +337,7 @@ int main(){
 
         std::string state_string = itr->value["state"].GetString();
 
-        material.state = -1;
-
-        if (!state_string.compare("powder")) { material.state = POWDER; }
-        else if (!state_string.compare("liquid")) { material.state = LIQUID; }
-        else if (!state_string.compare("gas"))    { material.state = GAS; }
-        else if (!state_string.compare("solid"))  { material.state = SOLID; }
+        material.state = state_from_string(state_string);
 
         material.density = itr->value["density"].GetInt();
 
