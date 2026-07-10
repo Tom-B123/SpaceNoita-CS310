@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <bitset>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -177,7 +178,7 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
             char* data = to_bitstring(data_buffer, x*2, y*2);
             
             // Calculate the next result that each cell wants to acheive
-            char results[4] = {0};
+            std::array<char,4> results = {0};
             for (int i = 0; i < 4; i++) {
                 Material material = material_data[data_buffer[(y*2 + (i / 2)) * WORLD_WIDTH + (x*2 + (i%2))].material];
                 // Only one of these will be non zero so we can sum them
@@ -187,7 +188,20 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
                 char resultR = rules[data[i] * (3*material.state+2)];
                 // Store the resulting arrangement we want from this cell
                 results[i] = resultN + resultL + resultR;
+                // Add the final 4 bits of the state to the result in the 1st 4 bits to allow us to sort 
+                // based on the state
+                results[i] |= ((char)material.state << 4);
             }
+
+            for (int i = 0; i < 4; i++) {
+                std::cout << std::bitset<8>(results[i]) << ",";
+            }
+            std::cout << " -> ";
+            std::sort(results.begin(), results.end());
+            for (int i = 0; i < 4; i++) {
+                std::cout << std::bitset<8>(results[i]) << ",";
+            }
+            std::cout << std::endl;
 
             free(data);
         }
