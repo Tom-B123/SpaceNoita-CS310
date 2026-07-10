@@ -28,5 +28,11 @@
         "colour":"#AAAAAA",
         "density":1,
         "state":"gas"
+    },
+    "R":{
+        "name":"Rock",
+        "colour":"#555555",
+        "density":500000,
+        "state":"solid"
     }
 }

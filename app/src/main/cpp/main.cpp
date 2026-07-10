@@ -34,6 +34,10 @@ struct Material {
     int state;
 };
 
+struct DataPoint {
+    char material;
+    bool updated;
+};
 
 Material material_data[256] = {0};
 
@@ -43,10 +47,11 @@ Material material_data[256] = {0};
 // Each state has unique rules.
 char rules[NUM_STATES * 3 * 16] = {0};
 
+
 bool SHOW_MATERIAL_COUNTS = false;
 bool SHOW_MATERIAL_COLOURS = false;
 bool SHOW_RULES_DEBUG = false;
-bool SHOW_RULES = true;
+bool SHOW_RULES = false;
 
 // Get the state integer / enum from a string
 int state_from_string(std::string state_string) {
@@ -55,6 +60,30 @@ int state_from_string(std::string state_string) {
         else if (!state_string.compare("gas"))    { return GAS; }
         else if (!state_string.compare("solid"))  { return SOLID; }
         return -1;
+}
+
+/**
+ *  Get the 2x2 area around the x,y position. return 4 bitstrings, each one represents the material 
+ *  in each cell compared to the density of the other 3.
+ */
+char* to_bitstring(DataPoint* data_buffer,int x, int y) {
+    char* data = new char[4];
+    for (int i = 0; i < 4; i++) {
+        int density = material_data[data_buffer[WORLD_WIDTH * (y + i / 2) + (x + i % 2)].material].density;
+        char map = 0;
+        for (int j = 0; j < 4; j++) {
+            map <<= 1;
+            if (material_data[data_buffer[WORLD_WIDTH * (y + j / 2) + (x + j % 2)].material].density >= density) {
+                map++;
+            }
+        }
+        data[i] = map;
+    }
+    for (int i = 0; i < 4; i++) {
+        std::cout << std::bitset<8>(data[i]) << ",";
+    }
+    std::cout << std::endl;
+    return data;
 }
 
 std::string find_shader_file(std::string shader) {
@@ -112,10 +141,6 @@ GLuint compile_shader(const char* source, GLenum type) {
     return shader;
 }
 
-struct DataPoint {
-    char material;
-    bool updated;
-};
 
 DataPoint* init_data_buffer(int w, int h) {
     DataPoint* data_buffer = new DataPoint[w*h];
@@ -266,6 +291,7 @@ int main(){
         auto left = itr->value["left"].GetArray();
         auto right = itr->value["right"].GetArray();
 
+
         // Loop over rules and add them to the rules array
         for (int i = 0; i < 16; i++) {
             char start = -1;
@@ -294,7 +320,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(state+0) * 16 + start] = result;
+                rules[(3 * state+0) * 16 + start] = result;
             }
             start = -1; result = -1;
             if (i < stable.Size()) {
@@ -321,7 +347,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(state+0) * 16 + start] = result;
+                rules[(3*state+0) * 16 + start] = result;
             }
             start=-1;result=-1;
             if (i < left.Size()) {
@@ -348,7 +374,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(state+1) * 16 + start] = result;
+                rules[(3*state+1) * 16 + start] = result;
             }
             start=-1;result=-1;
             if (i < right.Size()) {
@@ -375,8 +401,13 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(state+2) * 16 + start] = result;
+                rules[(3*state+2) * 16 + start] = result;
             }
+            // if (rules[(state+0) * 16 + start] == 0 &&
+            //     rules[(state+1) * 16 + start] == 0 &&
+            //     rules[(state+2) * 16 + start] == 0) {
+            //     rules[(state+0) * 16 + start] = start;
+            // }
         }
     }
     if (SHOW_RULES) {
@@ -562,7 +593,7 @@ int main(){
     char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
     DataPoint* data_buffer = init_data_buffer(WORLD_WIDTH,WORLD_HEIGHT);
 
-    char choices[5] = {'S','s','W','O',' '};
+    char choices[5] = {'S','R',' ',' ',' '};
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
