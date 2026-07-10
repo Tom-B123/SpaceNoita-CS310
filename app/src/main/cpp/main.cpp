@@ -17,6 +17,24 @@
 #include <fstream>
 #include <iostream>
 
+int POWDER=0;
+int LIQUID=1;
+int GAS=2;
+int SOLID=3;
+
+struct Material {
+    char name[128];
+    char colour[8];
+    int density;
+    char state[8];
+};
+
+Material material_data[256] = {0};
+
+
+bool SHOW_MATERIAL_COUNTS = false;
+bool SHOW_MATERIAL_COLOURS = false;
+
 std::string find_shader_file(std::string shader) {
     std::vector<std::string> search_paths = {
         "app/src/main/shaders/" + shader,
@@ -122,14 +140,34 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
         }
     }
-    for (int i = 0; i < 256; i++) {
-        if (counts[i] > 0) {
-            std::cout << (char)i << ": " << counts[i] << std::endl;
+    if (SHOW_MATERIAL_COUNTS) {
+        for (int i = 0; i < 256; i++) {
+            if (counts[i] > 0) {
+                std::cout << (char)i << ": " << counts[i] << std::endl;
+            }
         }
     }
 
 
     return render_buffer;
+}
+
+int hex2(char colour[8],int offset) {
+    int total = 0;
+
+    // Convert hex digits to n + 10
+    if (colour[offset+1] >= 'A' && colour[offset+1] <='F') total += colour[offset+1] - 'A' + 10;
+    // Convert numerical digits to n
+    else if (colour[offset+1] >= '0' && colour[offset+1] <='9') total += (colour[offset+1]-'0');
+    else return -1;
+    // Convert hex digits to 16(n + 10)
+    if (colour[offset] >= 'A' && colour[offset] <='F') total += 16 * (colour[offset] - 'A' + 10);
+    // Convert numerical digits to 16(n)
+    else if (colour[offset] >= '0' && colour[offset] <='9') total += 16 * (colour[offset]-'0');
+    else return -1;
+
+    // return total if it is valid hex code, else -1
+    return total;
 }
 
 int main(){
@@ -168,29 +206,48 @@ int main(){
     // Close the file
     fclose(fp);
 
-    rapidjson::Value& sand = d["S"];
-    std::cout << sand.FindMember("state")->value.GetString() << std::endl;
-    // std::cout << sand["density"].GetInt() << std::endl;
-    // Access the data in the JSON document
+
+    // Loop over all json elements
+    for (rapidjson::Value::ConstMemberIterator itr = d.MemberBegin();
+            itr != d.MemberEnd(); ++itr)
+    {
+        // Get each key, this is the material code as an ascii character
+        char material_code = itr->name.GetString()[0];
+        Material material;
+
+        // Store the material data inside a material struct, with fixed
+        // size for the name, colour and state strings.
+        for (int i = 0; i < 128; i++) {
+            material.name[i]=itr->value["name"].GetString()[i];
+        } 
+        for (int i = 0; i < 8; i++) {
+            material.colour[i]=itr->value["colour"].GetString()[i];
+        }
+        for (int i = 0; i < 8; i++) {
+            material.state[i]=itr->value["state"].GetString()[i];
+        }
+        material.density = itr->value["density"].GetInt();
+
+        material_data[material_code] = material;
+    }
 
     for (int material = 0; material < 256; material++) {
-        int r;
-        int g;
-        int b;
 
-        switch (material) {
-            case 'S':
-                r=255;g=255;b=0;break;
-            case 'W':
-                r=0;g=0;b=255;break;
-            case 's':
-                r=200;g=200;b=200;break;
-            case 'O':
-                r=128;g=0;b=0;break;
+        char* colour = material_data[material].colour;
+
+        // Convert the raw #RRGGBB- code into 3 integers from 0-256
+        int r = hex2(colour,1);
+        int g = hex2(colour,3);
+        int b = hex2(colour,5);
+
+        if (r < 0 || g < 0 || b < 0) { continue; }
+        if (SHOW_MATERIAL_COLOURS) {
+            std::cout << material_data[material].name << ": " << r << "," << g << "," << b << std::endl;
         }
-        colours[3 * material + 0] = r;
-        colours[3 * material + 1] = g;
-        colours[3 * material + 2] = b;
+        
+        colours[3 * material + 0] = r/256.0;
+        colours[3 * material + 1] = g/256.0;
+        colours[3 * material + 2] = b/256.0;
     }
 
     // ==================== Initialise window ======================
@@ -318,11 +375,11 @@ int main(){
     char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
     DataPoint* data_buffer = init_data_buffer(WORLD_WIDTH,WORLD_HEIGHT);
 
-    char choices[4] = {'S','s','W','O'};
+    char choices[5] = {'S','s','W','O',' '};
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
-            char material = choices[std::rand() & 0b11];
+            char material = choices[(y * WORLD_WIDTH + x) % 5];
             render_buffer[y * WORLD_WIDTH + x] = material;
             data_buffer[y * WORLD_WIDTH + x].material = material;
         }
