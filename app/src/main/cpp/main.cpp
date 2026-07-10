@@ -72,7 +72,63 @@ GLuint compile_shader(const char* source, GLenum type) {
     return shader;
 }
 
-char* update_step(char* render_buffer) {
+struct DataPoint {
+    char material;
+    bool updated;
+};
+
+DataPoint* init_data_buffer(int w, int h) {
+    DataPoint* data_buffer = new DataPoint[w*h];
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            data_buffer[y * w + x] = {
+                'S',
+                false
+            };
+        }
+    }
+    return data_buffer;
+}
+
+char* update_step(char* render_buffer,DataPoint* data_buffer) {
+
+
+    int counts[256] = {0};
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        for (int x = 0; x < WORLD_WIDTH; x++) {
+            data_buffer[y*WORLD_WIDTH + x].updated = false;
+            counts[(int)data_buffer[y*WORLD_WIDTH + x].material]++;
+        }
+    }
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        for (int x = 0; x < WORLD_WIDTH; x++) {
+            DataPoint val = data_buffer[y*WORLD_WIDTH + x];
+            if (y < WORLD_HEIGHT - 1) {
+                if (val.material == 'S') {
+                    DataPoint oth = data_buffer[(y+1)*WORLD_WIDTH + x];
+                    if (!val.updated && !oth.updated && oth.material != 'S') {
+                        oth.updated = true;
+                        val.updated = true;
+                        data_buffer[(y)*WORLD_WIDTH + x] = oth;
+                        data_buffer[(1+y)*WORLD_WIDTH + x] = val;
+                    }
+                }
+            }
+
+        }   
+    }
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        for (int x = 0; x < WORLD_WIDTH; x++) {
+            render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
+        }
+    }
+    for (int i = 0; i < 256; i++) {
+        if (counts[i] > 0) {
+            std::cout << (char)i << ": " << counts[i] << std::endl;
+        }
+    }
+
+
     return render_buffer;
 }
 
@@ -260,6 +316,7 @@ int main(){
 
     // Create the world as 1 byte per pixel
     char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
+    DataPoint* data_buffer = init_data_buffer(WORLD_WIDTH,WORLD_HEIGHT);
 
     char choices[4] = {'S','s','W','O'};
 
@@ -267,12 +324,14 @@ int main(){
         for (int x = 0; x < WORLD_WIDTH; x++) {
             char material = choices[std::rand() & 0b11];
             render_buffer[y * WORLD_WIDTH + x] = material;
+            data_buffer[y * WORLD_WIDTH + x].material = material;
         }
     }
 
     // =============== Main Loop ===============================
 
     while (!glfwWindowShouldClose(window)) {
+        Sleep(500);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(shader_program);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -285,7 +344,7 @@ int main(){
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        render_buffer = update_step(render_buffer);
+        render_buffer = update_step(render_buffer,data_buffer);
 
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 
