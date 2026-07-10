@@ -45,6 +45,7 @@ char rules[NUM_STATES * 3 * 16] = {0};
 
 bool SHOW_MATERIAL_COUNTS = false;
 bool SHOW_MATERIAL_COLOURS = false;
+bool SHOW_RULES_DEBUG = false;
 bool SHOW_RULES = true;
 
 // Get the state integer / enum from a string
@@ -262,13 +263,72 @@ int main(){
         // These also include transitions that DON'T get affected by left / right priority
         auto neutral = itr->value["neutral"].GetArray();
         auto stable = itr->value["stable"].GetArray();
+        auto left = itr->value["left"].GetArray();
+        auto right = itr->value["right"].GetArray();
+
+        // Loop over rules and add them to the rules array
         for (int i = 0; i < 16; i++) {
             char start = -1;
             char result = -1;
             if (i < neutral.Size()) {
                 auto tmp = neutral[i].GetArray();
-                if (SHOW_RULES) {
+                if (SHOW_RULES_DEBUG) {
                     std::cout << 
+                        "NEUTRAL: " << std::endl <<
+                        tmp[0].GetString() << 
+                        tmp[1].GetString() << ">>" <<
+                        tmp[4].GetString() <<
+                        tmp[5].GetString() << std::endl << 
+                        tmp[2].GetString() << 
+                        tmp[3].GetString() << ">>" <<
+                        tmp[6].GetString() <<
+                        tmp[7].GetString() << std::endl;
+                }
+                start = 0; result = 0;
+                for (int i = 0; i < 4; i++) {
+                    result <<= 1;
+                    start <<= 1;
+                    if (tmp[i].GetString()[0] == 'H') start++;
+                    if (tmp[i+4].GetString()[0] == 'H') result++;
+                }
+            }
+            if (start > -1 && result > -1) {
+                if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+                rules[(state+0) * 16 + start] = result;
+            }
+            start = -1; result = -1;
+            if (i < stable.Size()) {
+                auto tmp = stable[i].GetArray();
+                if (SHOW_RULES_DEBUG) {
+                    std::cout << 
+                        "NEUTRAL: " << std::endl << 
+                        tmp[0].GetString() << 
+                        tmp[1].GetString() << ">>" <<
+                        tmp[0].GetString() <<
+                        tmp[1].GetString() << std::endl << 
+                        tmp[2].GetString() << 
+                        tmp[3].GetString() << ">>" <<
+                        tmp[2].GetString() <<
+                        tmp[3].GetString() << std::endl;
+                }
+                start = 0; result = 0;
+                for (int i = 0; i < 4; i++) {
+                    result <<= 1;
+                    start <<= 1;
+                    if (tmp[i].GetString()[0] == 'H') start++;
+                    if (tmp[i].GetString()[0] == 'H') result++;
+                }
+            }
+            if (start > -1 && result > -1) {
+                if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+                rules[(state+0) * 16 + start] = result;
+            }
+            start=-1;result=-1;
+            if (i < left.Size()) {
+                auto tmp = left[i].GetArray();
+                if (SHOW_RULES_DEBUG) {
+                    std::cout << 
+                        "LEFT: " << std::endl <<
                         tmp[0].GetString() <<
                         tmp[1].GetString() << ">>" <<
                         tmp[4].GetString() <<
@@ -286,33 +346,47 @@ int main(){
                     if (tmp[i+4].GetString()[0] == 'H') result++;
                 }
             }
-            if (SHOW_RULES && start > -1 && result > -1) {
-                std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+            if (start > -1 && result > -1) {
+                if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+                rules[(state+1) * 16 + start] = result;
             }
-            start = -1; result = -1;
-            if (i < stable.Size()) {
-                auto tmp = stable[i].GetArray();
-                if (SHOW_RULES) {
+            start=-1;result=-1;
+            if (i < right.Size()) {
+                auto tmp = right[i].GetArray();
+                if (SHOW_RULES_DEBUG) {
                     std::cout << 
-                        tmp[0].GetString() <<
+                        "RIGHT: " << std::endl <<
+                        tmp[0].GetString() << 
                         tmp[1].GetString() << ">>" <<
-                        tmp[0].GetString() <<
-                        tmp[1].GetString() << std::endl << 
+                        tmp[4].GetString() <<
+                        tmp[5].GetString() << std::endl << 
                         tmp[2].GetString() << 
                         tmp[3].GetString() << ">>" <<
-                        tmp[2].GetString() <<
-                        tmp[3].GetString() << std::endl;
+                        tmp[6].GetString() <<
+                        tmp[7].GetString() << std::endl;
                 }
                 start = 0; result = 0;
                 for (int i = 0; i < 4; i++) {
                     result <<= 1;
                     start <<= 1;
                     if (tmp[i].GetString()[0] == 'H') start++;
-                    if (tmp[i].GetString()[0] == 'H') result++;
+                    if (tmp[i+4].GetString()[0] == 'H') result++;
                 }
             }
-            if (SHOW_RULES && start > -1 && result > -1) {
-                std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+            if (start > -1 && result > -1) {
+                if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
+                rules[(state+2) * 16 + start] = result;
+            }
+        }
+    }
+    if (SHOW_RULES) {
+        for (int i = 0; i < NUM_STATES; i++) {
+            std::cout << "state: " << i<<std::endl;
+            for (int j = 0; j < 3; j++) {
+                std::cout << "type: " << j<<std::endl;
+                for (int k = 0; k < 16; k++) {
+                    std::cout << std::bitset<8>(k) << "->" << std::bitset<8>(rules[i * 3 * 16 + j * 16 + k]) << std::endl;
+                }
             }
         }
     }
