@@ -17,17 +17,20 @@
 #include <fstream>
 #include <iostream>
 
+// 
 int POWDER=0;
 int LIQUID=1;
 int GAS=2;
 int SOLID=3;
 
+// Information about a given material, from materials.json
 struct Material {
     char name[128];
     char colour[8];
     int density;
-    char state[8];
+    int state;
 };
+
 
 Material material_data[256] = {0};
 
@@ -122,9 +125,12 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             DataPoint val = data_buffer[y*WORLD_WIDTH + x];
             if (y < WORLD_HEIGHT - 1) {
-                if (val.material == 'S') {
+                // std::cout << material_data[val.material].name << material_data[val.material].state << std::endl;
+                if (material_data[val.material].state >= 0) {
                     DataPoint oth = data_buffer[(y+1)*WORLD_WIDTH + x];
-                    if (!val.updated && !oth.updated && oth.material != 'S') {
+                    if (!val.updated && 
+                        !oth.updated && 
+                        material_data[oth.material].density < material_data[val.material].density) {
                         oth.updated = true;
                         val.updated = true;
                         data_buffer[(y)*WORLD_WIDTH + x] = oth;
@@ -188,7 +194,7 @@ int main(){
     // Read the entire file into a string
     std::string location = find_shader_file("../cpp/materials.json");
 
-    std::cout << location << std::endl;
+    // std::cout << location << std::endl;
 
     FILE* fp = fopen(location.c_str(), "r");
 
@@ -223,9 +229,16 @@ int main(){
         for (int i = 0; i < 8; i++) {
             material.colour[i]=itr->value["colour"].GetString()[i];
         }
-        for (int i = 0; i < 8; i++) {
-            material.state[i]=itr->value["state"].GetString()[i];
-        }
+
+        std::string state_string = itr->value["state"].GetString();
+
+        material.state = -1;
+
+        if (!state_string.compare("powder")) { material.state = POWDER; }
+        else if (!state_string.compare("liquid")) { material.state = LIQUID; }
+        else if (!state_string.compare("gas"))    { material.state = GAS; }
+        else if (!state_string.compare("solid"))  { material.state = SOLID; }
+
         material.density = itr->value["density"].GetInt();
 
         material_data[material_code] = material;
