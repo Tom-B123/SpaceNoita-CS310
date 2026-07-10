@@ -18,11 +18,11 @@
 #include <fstream>
 #include <iostream>
 
-// 
-int POWDER=0;
-int LIQUID=1;
-int GAS=2;
-int SOLID=3;
+// stores priority so order can be consitent, solids process 1st when mixed states in neighbourhood
+int SOLID=0;
+int POWDER=1;
+int LIQUID=2;
+int GAS=3;
 
 #define NUM_STATES 4
 
@@ -52,6 +52,7 @@ bool SHOW_MATERIAL_COUNTS = false;
 bool SHOW_MATERIAL_COLOURS = false;
 bool SHOW_RULES_DEBUG = false;
 bool SHOW_RULES = false;
+bool SHOW_BITSETS = false;
 
 // Get the state integer / enum from a string
 int state_from_string(std::string state_string) {
@@ -79,10 +80,13 @@ char* to_bitstring(DataPoint* data_buffer,int x, int y) {
         }
         data[i] = map;
     }
-    for (int i = 0; i < 4; i++) {
-        std::cout << std::bitset<8>(data[i]) << ",";
+    if (SHOW_BITSETS) {
+        for (int i = 0; i < 4; i++) {
+            std::cout << std::bitset<8>(data[i]) << ",";
+        }
+        std::cout << std::endl;
+
     }
-    std::cout << std::endl;
     return data;
 }
 
@@ -165,25 +169,48 @@ char* update_step(char* render_buffer,DataPoint* data_buffer) {
             counts[(int)data_buffer[y*WORLD_WIDTH + x].material]++;
         }
     }
-    for (int y = 0; y < WORLD_HEIGHT; y++) {
-        for (int x = 0; x < WORLD_WIDTH; x++) {
-            DataPoint val = data_buffer[y*WORLD_WIDTH + x];
-            if (y < WORLD_HEIGHT - 1) {
-                if (material_data[val.material].state == POWDER) {
-                    DataPoint oth = data_buffer[(y+1)*WORLD_WIDTH + x];
-                    if (!val.updated && 
-                        !oth.updated && 
-                        material_data[oth.material].density < material_data[val.material].density) {
-                        oth.updated = true;
-                        val.updated = true;
-                        data_buffer[(y)*WORLD_WIDTH + x] = oth;
-                        data_buffer[(1+y)*WORLD_WIDTH + x] = val;
-                    }
-                }
+    // Update using margolous neighbourhood.
+    for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
+        for (int x = 0; x < WORLD_WIDTH / 2; x++) {
+            // Convert the data to 4 bitstrings, which represent the 
+            // denser and lighter cells compard to each [' , ',. , .]
+            char* data = to_bitstring(data_buffer, x*2, y*2);
+            
+            // Calculate the next result that each cell wants to acheive
+            char results[4] = {0};
+            for (int i = 0; i < 4; i++) {
+                Material material = material_data[data_buffer[(y*2 + (i / 2)) * WORLD_WIDTH + (x*2 + (i%2))].material];
+                // Only one of these will be non zero so we can sum them
+                char resultN = rules[data[i] * (3*material.state+0)];
+                // Some logic may be needed here to sometimes not move left / right.
+                char resultL = rules[data[i] * (3*material.state+1)];
+                char resultR = rules[data[i] * (3*material.state+2)];
+                // Store the resulting arrangement we want from this cell
+                results[i] = resultN + resultL + resultR;
             }
 
-        }   
+            free(data);
+        }
     }
+    // for (int y = 0; y < WORLD_HEIGHT; y++) {
+    //     for (int x = 0; x < WORLD_WIDTH; x++) {
+    //         DataPoint val = data_buffer[y*WORLD_WIDTH + x];
+    //         if (y < WORLD_HEIGHT - 1) {
+    //             if (material_data[val.material].state == POWDER) {
+    //                 DataPoint oth = data_buffer[(y+1)*WORLD_WIDTH + x];
+    //                 if (!val.updated && 
+    //                     !oth.updated && 
+    //                     material_data[oth.material].density < material_data[val.material].density) {
+    //                     oth.updated = true;
+    //                     val.updated = true;
+    //                     data_buffer[(y)*WORLD_WIDTH + x] = oth;
+    //                     data_buffer[(1+y)*WORLD_WIDTH + x] = val;
+    //                 }
+    //             }
+    //         }
+    //
+    //     }   
+    // }
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
