@@ -163,110 +163,56 @@ DataPoint* init_data_buffer(int w, int h) {
     return data_buffer;
 }
 
+DataPoint* simple_sand_update(DataPoint* data_buffer, long step,
+                            int x, int y) {
+    char tl = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
+    char tr = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
+    char bl = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
+    char br = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
 
+    bool swapped = false;
 
-char* update_step(char* render_buffer,DataPoint* data_buffer,long step) {
+    if (y*2 >= WORLD_HEIGHT - 2) { return data_buffer; }
 
-    int counts[256] = {0};
-    for (int y = 0; y < WORLD_HEIGHT; y++) {
-        for (int x = 0; x < WORLD_WIDTH; x++) {
-            data_buffer[y*WORLD_WIDTH + x].updated = false;
-            counts[(int)data_buffer[y*WORLD_WIDTH + x].material]++;
-        }
+    if (material_data[tl].state != SOLID && material_data[tl].density > material_data[bl].density) {
+        data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = bl;
+        data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = tl;
+        swapped = true;
     }
-    data_buffer[5].material = 'S';
-    // Update using margolous neighbourhood.
-    for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
-        for (int x = 0; x < WORLD_WIDTH / 2; x++) {
-            char tl = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
-            char tr = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
-            char bl = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
-            char br = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
-            
-            bool swapped = false;
-            
-            if (y*2 >= WORLD_HEIGHT - 2) { continue; }
+    if (material_data[tr].state != SOLID && material_data[tr].density > material_data[br].density) {
+        data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = br;
+        data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = tr;
+        swapped = true;
+    }
+    if (!swapped && material_data[tl].state != SOLID && material_data[tl].density > material_data[br].density) {
+        data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = br;
+        data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = tl;
+        swapped = true;
+    }
+    if (!swapped && material_data[tr].state != SOLID && material_data[tr].density > material_data[bl].density) {
+        data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = br;
+        data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = tr;
+        swapped = true;
+    }
+    return data_buffer;
+}
 
-            if (material_data[tl].state != SOLID && material_data[tl].density > material_data[bl].density) {
-                data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = bl;
-                data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = tl;
-                swapped = true;
-            }
-            if (material_data[tr].state != SOLID && material_data[tr].density > material_data[br].density) {
-                data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = br;
-                data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = tr;
-                swapped = true;
-            }
-            if (!swapped && material_data[tl].state != SOLID && material_data[tl].density > material_data[br].density) {
-                data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = br;
-                data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = tl;
-                swapped = true;
-            }
-            if (!swapped && material_data[tr].state != SOLID && material_data[tr].density > material_data[bl].density) {
-                data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = br;
-                data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = tr;
-                swapped = true;
-            }
+DataPoint* bitmap_update(DataPoint* data_buffer, long step,
+                            int x, int y) {
+    return data_buffer;
+}
 
-            // // Convert the data to 4 bitstrings, which represent the 
-            // // denser and lighter cells compard to each [' , ',. , .]
-            // char* data = to_bitstring(data_buffer, x*2, y*2,step%2);
-            //
-            // // Calculate the next result that each cell wants to acheive
-            // std::array<char,4> results = {0};
-            // std::array<char,4> order = {0,1,2,3};
-            // for (int i = 0; i < 4; i++) {
-            //     Material material = material_data[data_buffer[(y*2 + (i / 2)) * WORLD_WIDTH + (x*2 + (i%2))].material];
-            //     // Only one of these will be non zero so we can sum them
-            //     char resultN = rules[data[i] * (3*material.state+0)];
-            //     // Some logic may be needed here to sometimes not move left / right.
-            //     char resultL = rules[data[i] * (3*material.state+1)];
-            //     char resultR = rules[data[i] * (3*material.state+2)];
-            //     // Store the resulting arrangement we want from this cell
-            //     results[i] = resultN + resultL + resultR;
-            //     // Add the final 4 bits of the state to the result in the 1st 4 bits to allow us to sort 
-            //     // based on the state
-            //     results[i] |= ((char)material.state << 4);
-            //     order[i] |= ((char)material.state << 4);
-            // }
-            //
-            // // Debug output
-            // if (SHOW_REORDERING) {
-            //     for (int i = 0; i < 4; i++) {
-            //         std::cout << (order[i] & 0b1111) << ",";
-            //     }
-            //     std::cout << std::endl;
-            //     for (int i = 0; i < 4; i++) {
-            //         std::cout << std::bitset<8>(results[i]) << ",";
-            //     }
-            //     std::cout << " -> ";
-            // }
-            // //
-            //
-            // // Sort the results so we process all of one state, then all of the next state.
-            // std::sort(results.begin(), results.end());
-            // // Keep track of which cell is in which position, doesn't necessarly correspond exacly to 
-            // // result's ordering.
-            // std::sort(order.begin(), order.end());
-            //
-            // // Debug output
-            // if (SHOW_REORDERING) {
-            //     for (int i = 0; i < 4; i++) {
-            //         std::cout << std::bitset<8>(results[i]) << ",";
-            //     }
-            //     std::cout << std::endl;
-            //     for (int i = 0; i < 4; i++) {
-            //         std::cout << (order[i] & 0b1111) << ",";
-            //     }
-            //     std::cout << std::endl;
-            // }
-            // //
-            //
-            // // for (int i = 0; i < 4; i++) {
-            // //     data_buffer[((2 * y)+i/2) * WORLD_WIDTH + ((2 * x)+i%2)].material = 
-            // //         data_buffer[(((y+1)%(WORLD_HEIGHT/2))*2 + (i / 2)) * WORLD_WIDTH + (x*2 + (i%2))].material;
-            // // }
-            // free(data);
+
+char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
+                    int num_updates) {
+
+    for (int i = 0; i < num_updates; i++) {
+        data_buffer[5].material = 'S';
+        // Update using margolous neighbourhood.
+        for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
+            for (int x = 0; x < WORLD_WIDTH / 2; x++) {
+                data_buffer = simple_sand_update(data_buffer,step + i,x,y);
+            }
         }
     }
     // for (int y = 0; y < WORLD_HEIGHT; y++) {
@@ -293,14 +239,6 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step) {
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
         }
     }
-    if (SHOW_MATERIAL_COUNTS) {
-        for (int i = 0; i < 256; i++) {
-            if (counts[i] > 0) {
-                std::cout << (char)i << ": " << counts[i] << std::endl;
-            }
-        }
-    }
-
 
     return render_buffer;
 }
@@ -710,6 +648,9 @@ int main(){
     // =============== Main Loop ===============================
 
     unsigned long step = 0;
+
+    int NUM_UPDATES = 20;
+
     while (!glfwWindowShouldClose(window)) {
         // Sleep(10);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -724,11 +665,10 @@ int main(){
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         
-        for (int i = 0; i < 100; i++) {
-            render_buffer = update_step(render_buffer,data_buffer,step);
+        Sleep(16);
+        render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES);
 
-            step++;
-        }
+        step+=NUM_UPDATES;
 
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 
