@@ -165,10 +165,12 @@ DataPoint* init_data_buffer(int w, int h) {
 
 DataPoint* simple_sand_update(DataPoint* data_buffer, long step,
                             int x, int y) {
+    if (x > 20) { return data_buffer; }
     char tl = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
     char tr = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
     char bl = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
     char br = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
+
 
     bool swapped = false;
 
@@ -649,7 +651,7 @@ int main(){
 
     unsigned long step = 0;
 
-    int NUM_UPDATES = 20;
+    int NUM_UPDATES = 200;
 
     while (!glfwWindowShouldClose(window)) {
         // Sleep(10);
