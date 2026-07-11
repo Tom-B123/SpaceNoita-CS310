@@ -73,17 +73,20 @@ char* to_bitstring(DataPoint* data_buffer,int x, int y,int offset) {
     x += offset;
     y += offset;
     char* data = new char[4];
+    std::cout << "Converting bitstring at: " << x << "," << y << std::endl;
     for (int i = 0; i < 4; i++) {
-        int density = material_data[data_buffer[WORLD_WIDTH * (y + i / 2) + (x + i % 2)].material].density;
+        int density = material_data[data_buffer[WORLD_WIDTH * ((y + i / 2) % WORLD_HEIGHT) + (x + i % 2) % WORLD_WIDTH].material].density;
         char map = 0;
         for (int j = 0; j < 4; j++) {
             map <<= 1;
-            if (material_data[data_buffer[WORLD_WIDTH * (y + (j / 2)) + (x + (j % 2))].material].density >= density) {
+            if (material_data[data_buffer[WORLD_WIDTH * ((y + (j / 2))%WORLD_HEIGHT) + (x + (j % 2)) % WORLD_WIDTH].material].density >= density) {
                 map++;
             }
+            std::cout << material_data[data_buffer[WORLD_WIDTH * ((y + (j / 2))%WORLD_HEIGHT) + (x + (j % 2)) % WORLD_WIDTH].material].name << ",";
         }
         data[i] = map;
     }
+    std::cout << std::endl;
     if (SHOW_BITSETS) {
         for (int i = 0; i < 4; i++) {
             std::cout << std::bitset<8>(data[i]) << ",";
@@ -165,7 +168,6 @@ DataPoint* init_data_buffer(int w, int h) {
 
 DataPoint* simple_sand_update(DataPoint* data_buffer, long step,
                             int x, int y) {
-    if (x > 20) { return data_buffer; }
     char tl = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
     char tr = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material;
     char bl = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material;
@@ -201,6 +203,41 @@ DataPoint* simple_sand_update(DataPoint* data_buffer, long step,
 
 DataPoint* bitmap_update(DataPoint* data_buffer, long step,
                             int x, int y) {
+    // Get the bitmap for which cells are lighter / heavier than each of the 4 cells
+    char* density_map = to_bitstring(data_buffer,x*2,y*2,step%2);
+
+    char results[4] = {0};
+    int states[4] = {0};
+    // Go through each cell to get the desired result
+    for (int i = 0; i < 4; i++) {
+        std::cout << (i%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(i/2 + step%2))%WORLD_HEIGHT) << ":";
+        DataPoint val = data_buffer[((y*2 +(i/2 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (i%2 + step%2 + (x * 2))%WORLD_WIDTH];
+        char material = val.material;
+        int state = material_data[material].state;
+
+        states[i] = state;
+
+        // Lookup the neutral, left and right rules for the given density and state,
+        // E.G. state = solid or powder and each has unique rules defined in the rules.json
+        char resultN = rules[(3 * state + 0) * 16 + density_map[i]];
+        // Left and right rules
+        char resultL = rules[(3 * state + 1) * 16 + density_map[i]];
+        char resultR = rules[(3 * state + 2) * 16 + density_map[i]];
+
+        // We assume there can never be a left AND right AND neutral rule for any 
+        // state <-> denisty map pair; only 1.
+        results[i] = resultN + resultL + resultR;
+        std::cout << material_data[material].name << ",";
+    }
+
+    std::cout << std::endl;
+    for (int i = 0; i < 4; i++) {
+        std::cout << std::bitset<8>(density_map[i]) << " -> " << std::bitset<8>(results[i]) << std::endl;
+    }
+
+
+    free(density_map);
+
     return data_buffer;
 }
 
@@ -213,29 +250,12 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
         // Update using margolous neighbourhood.
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
-                data_buffer = simple_sand_update(data_buffer,step + i,x,y);
+                // data_buffer = simple_sand_update(data_buffer,step + i,x,y);
+                data_buffer = bitmap_update(data_buffer,step + i,x,y);
             }
         }
     }
-    // for (int y = 0; y < WORLD_HEIGHT; y++) {
-    //     for (int x = 0; x < WORLD_WIDTH; x++) {
-    //         DataPoint val = data_buffer[y*WORLD_WIDTH + x];
-    //         if (y < WORLD_HEIGHT - 1) {
-    //             if (material_data[val.material].state == POWDER) {
-    //                 DataPoint oth = data_buffer[(y+1)*WORLD_WIDTH + x];
-    //                 if (!val.updated && 
-    //                     !oth.updated && 
-    //                     material_data[oth.material].density < material_data[val.material].density) {
-    //                     oth.updated = true;
-    //                     val.updated = true;
-    //                     data_buffer[(y)*WORLD_WIDTH + x] = oth;
-    //                     data_buffer[(1+y)*WORLD_WIDTH + x] = val;
-    //                 }
-    //             }
-    //         }
-    //
-    //     }   
-    // }
+
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
@@ -651,7 +671,7 @@ int main(){
 
     unsigned long step = 0;
 
-    int NUM_UPDATES = 200;
+    int NUM_UPDATES = 3;
 
     while (!glfwWindowShouldClose(window)) {
         // Sleep(10);
