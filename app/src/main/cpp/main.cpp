@@ -50,6 +50,7 @@ char rules[NUM_STATES * 3 * 16] = {0};
 
 
 bool SHOW_MATERIAL_COUNTS = false;
+bool SHOW_MATERIAL_CHANGES = true;
 bool SHOW_MATERIAL_COLOURS = false;
 bool SHOW_RULES_DEBUG = false;
 bool SHOW_RULES = false;
@@ -70,33 +71,48 @@ int state_from_string(std::string state_string) {
  *  in each cell compared to the density of the other 3.
  */
 char* to_bitstring(DataPoint* data_buffer,int x, int y,int offset) {
+    // Returns 4 bytes. Each byte is a 4 bit bitmap of which of the :: cells are 
+    // 0 -> less dense than the given cell 
+    // 1 -> the same or denser than the given cell 
+    
+    // offset each frame to get margolour neighbourhoods, allows cells to travel 
+    // from very top to very bottom of world and not just top of cell to bottom of cell
     x += offset;
     y += offset;
     char* data = new char[4];
-    std::cout << "Converting bitstring at: " << x << "," << y << std::endl;
+
+    if (SHOW_BITSETS)
+        std::cout << "Converting bitstring at: " << x << "," << y << std::endl;
+
     for (int i = 0; i < 4; i++) {
+        // Get the density of each cell to compare to the other 3.
         int density = material_data[data_buffer[WORLD_WIDTH * ((y + i / 2) % WORLD_HEIGHT) + (x + i % 2) % WORLD_WIDTH].material].density;
         char map = 0;
         for (int j = 0; j < 4; j++) {
+            // For each cell, store a 1 if it's density >= this cell
             map <<= 1;
             if (material_data[data_buffer[WORLD_WIDTH * ((y + (j / 2))%WORLD_HEIGHT) + (x + (j % 2)) % WORLD_WIDTH].material].density >= density) {
                 map++;
             }
-            std::cout << material_data[data_buffer[WORLD_WIDTH * ((y + (j / 2))%WORLD_HEIGHT) + (x + (j % 2)) % WORLD_WIDTH].material].name << ",";
+            if (SHOW_BITSETS)
+                std::cout << material_data[data_buffer[WORLD_WIDTH * ((y + (j / 2))%WORLD_HEIGHT) + (x + (j % 2)) % WORLD_WIDTH].material].name << ",";
         }
+        // Add the bitmap to the data output array
         data[i] = map;
     }
-    std::cout << std::endl;
     if (SHOW_BITSETS) {
+    std::cout << std::endl;
         for (int i = 0; i < 4; i++) {
             std::cout << std::bitset<8>(data[i]) << ",";
         }
         std::cout << std::endl;
 
     }
+    
     return data;
 }
 
+// Locate a given file
 std::string find_shader_file(std::string shader) {
     std::vector<std::string> search_paths = {
         "app/src/main/shaders/" + shader,
@@ -120,6 +136,7 @@ std::string find_shader_file(std::string shader) {
     return "C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/shaders/" + shader;
 }
 
+// Converts a file location into a string containing that files contents.
 std::string get_shader_src(std::string shader) {
     std::ifstream hello_world_file(find_shader_file(shader));
     std::string src(std::istreambuf_iterator<char>(hello_world_file), (std::istreambuf_iterator<char>()));
@@ -210,7 +227,8 @@ DataPoint* bitmap_update(DataPoint* data_buffer, long step,
     int states[4] = {0};
     // Go through each cell to get the desired result
     for (int i = 0; i < 4; i++) {
-        std::cout << (i%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(i/2 + step%2))%WORLD_HEIGHT) << ":";
+        if (SHOW_BITSETS) std::cout << (i%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(i/2 + step%2))%WORLD_HEIGHT) << ":";
+
         DataPoint val = data_buffer[((y*2 +(i/2 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (i%2 + step%2 + (x * 2))%WORLD_WIDTH];
         char material = val.material;
         int state = material_data[material].state;
@@ -227,17 +245,96 @@ DataPoint* bitmap_update(DataPoint* data_buffer, long step,
         // We assume there can never be a left AND right AND neutral rule for any 
         // state <-> denisty map pair; only 1.
         results[i] = resultN + resultL + resultR;
-        std::cout << material_data[material].name << ",";
+        if (SHOW_BITSETS) std::cout << material_data[material].name << ",";
     }
 
-    std::cout << std::endl;
-    for (int i = 0; i < 4; i++) {
-        std::cout << std::bitset<8>(density_map[i]) << " -> " << std::bitset<8>(results[i]) << std::endl;
+    /* ========================================================
+     *  Result now stores the desired change in densities for each cell.
+     *  For example, if we have [S] [S] then we want to have [L] [L] from the 2 sand cells.
+     *                          [ ] [ ]                      [H] [H]
+     *  This movement assumes all cells are one of 2 materials, this may not work in practice.
+     *
+     *  To apply the rule, we want to see if anything changed, and if it did then swap the required cells
+     *  to fulful the new result.
+     * =======================================================*/
+
+    if (SHOW_BITSETS) {
+        std::cout << std::endl;
+        for (int i = 0; i < 4; i++) {
+            std::cout << std::bitset<8>(density_map[i]) << " -> " << std::bitset<8>(results[i]) << std::endl;
+        }
     }
+
+
+    // See how many heavy cells are in the before and after states. If they are the same, we need 
+    // to pick n cells to swap their materials.
+    int countA[4] = {0};
+    int countB[4] = {0};
+    int difference_mask[4] = {0};
+    for (int i = 0; i < 4; i++) {
+        // Calculate where cells are being swapped, and how many heavier / lighter cells are in the current and next state
+        int mask = 8;
+        for (int j = 0; j < 4; j++) {
+            if ((density_map[i]&mask) > 0) countA[i]++;
+            if ((results[i]&mask) > 0) countB[i]++;
+            if ((results[i]&mask) !=  (density_map[i]&mask)) {
+                    difference_mask[i] |= mask;
+                    if (SHOW_MATERIAL_CHANGES) 
+                        std::cout << "Movement at "<< (j%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(j/2 + step%2))%WORLD_HEIGHT) << std::endl;
+            }
+            mask >>= 1;
+        }
+    }
+    // We want to find which cells are being swapped then swap their materials innit
+    for (int i = 0; i < 4; i++) {
+
+        for (int j = 0; j < 4; j++) {
+            int mask = 8;
+            if ((difference_mask[i] & mask) > 0) {
+            }
+            mask >>= 1;
+
+        }
+        // Track swaps, assuming an even number will be needed. Stores a cell that needs to change and swaps with the next lighter cell found.
+        // Repeat until no more swaps can be made
+        char cells[2] = {0};
+        int ind = 0;
+        for (int j = 0; j < 4; j++) {
+            int mask = 8;
+            // Get the current cell data in the 2 positions we will swap
+            DataPoint val = data_buffer[((y*2 +(j/2 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (j%2 + step%2 + (x * 2))%WORLD_WIDTH];
+            if ((difference_mask[i] & mask) > 0) cells[ind] = val.material;
+        }
+        if ((difference_mask[i] & 8) > 0) std::cout << "TL changed!" << std::endl;
+        if ((difference_mask[i] & 4) > 0) std::cout << "TR changed!" << std::endl;
+        if ((difference_mask[i] & 2) > 0) std::cout << "BL changed!" << std::endl;
+        if ((difference_mask[i] & 1) > 0) std::cout << "BR changed!" << std::endl;
+        char n_mat = 'A';
+        if (SHOW_MATERIAL_CHANGES) std::cout << "Set [" << n_mat << "] at "<< (i%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(i/2 + step%2))%WORLD_HEIGHT) << std::endl;
+    }
+
+
+
+        //     int mask = 8;
+        //     for (int j = 0; j < 4; j++) {
+        //         if ((results[i]&mask) > 0) {
+        //             n_mat = 'B';
+        //         }
+        //         data_buffer[((y*2 +(j/2 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (j%2 + step%2 + (x * 2))%WORLD_WIDTH].material = n_mat;
+        //
+        //         mask >>= 1;
+        //     }
+        // }
+        // std::cout << "Heavy cells: " << countA << " -> " << countB << std::endl;
+
+
+
+            // if (SHOW_BITSETS) std::cout << "Movement at: " << (i%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(i/2 + step%2))%WORLD_HEIGHT) << std::endl;
 
 
     free(density_map);
 
+    std::cout << "update done!" << std::endl;
     return data_buffer;
 }
 
@@ -246,7 +343,7 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
                     int num_updates) {
 
     for (int i = 0; i < num_updates; i++) {
-        data_buffer[5].material = 'S';
+        data_buffer[0].material = 'S';
         // Update using margolous neighbourhood.
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
@@ -687,7 +784,7 @@ int main(){
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         
-        Sleep(16);
+        Sleep(500);
         render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES);
 
         step+=NUM_UPDATES;
