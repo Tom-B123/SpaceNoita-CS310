@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/sky/cs310/SpaceNoita-CS310/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

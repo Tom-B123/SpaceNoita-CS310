@@ -1,0 +1,10 @@
+See file:///home/sky/cs310/SpaceNoita-CS310/app/build/tmp/compileDebugLinuxCpp/output.txt for all output for compileDebugLinuxCpp.
+compiling graphics.cpp successful.
+
+compiling main.cpp failed.
+/home/sky/cs310/SpaceNoita-CS310/app/src/main/cpp/main.cpp:6:10: fatal error: rapidjson/document.h: No such file or directory
+    6 | #include "rapidjson/document.h"
+      |          ^~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+
+Finished compileDebugLinuxCpp, see full log file:///home/sky/cs310/SpaceNoita-CS310/app/build/tmp/compileDebugLinuxCpp/output.txt.
