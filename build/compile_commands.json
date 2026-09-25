@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/sky/cs310/SpaceNoita-CS310/build",
+  "command": "/usr/bin/c++  -I/home/sky/cs310/SpaceNoita-CS310/src/main/headers -std=gnu++17 -o CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o -c /home/sky/cs310/SpaceNoita-CS310/src/main/cpp/graphics.cpp",
+  "file": "/home/sky/cs310/SpaceNoita-CS310/src/main/cpp/graphics.cpp",
+  "output": "CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o"
+}
+]
