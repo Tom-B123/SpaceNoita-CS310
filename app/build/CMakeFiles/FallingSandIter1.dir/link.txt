@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/FallingSandIter1.dir/link.d CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o -o FallingSandIter1  /usr/lib/libOpenCL.so /usr/lib/libGLEW.so /usr/lib/libglfw.so.3.5 /usr/lib/libGLX.so /usr/lib/libOpenGL.so
