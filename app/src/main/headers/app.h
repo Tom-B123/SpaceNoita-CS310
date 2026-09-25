@@ -10,9 +10,9 @@
 #include <thread>
 #include <vector>
 #include <fstream>
-#include <conio.h>
+// #include <conio.h>
 #include <stdio.h>
-#include <Windows.h>
+// #include <Windows.h>
 #include <string>
 
 const int WORLD_WIDTH = 4;
