@@ -3,22 +3,20 @@
 
 CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o
  /home/sky/cs310/SpaceNoita-CS310/src/main/cpp/graphics.cpp
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/cpp/graphics.cpp
  /usr/include/stdc-predef.h
 
 CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o
  /home/sky/cs310/SpaceNoita-CS310/src/main/cpp/main.cpp
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/cpp/main.cpp
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/cl.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/cl_ext.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/cl_gl.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/cl_platform.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/cl_version.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/opencl.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/CL/opencl.hpp
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/GL/glew.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/GLFW/glfw3.h
- /home/sky/cs310/SpaceNoita-CS310/app/src/main/headers/app.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/cl.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/cl_ext.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/cl_gl.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/cl_platform.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/cl_version.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/opencl.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/CL/opencl.hpp
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/GL/glew.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/GLFW/glfw3.h
+ /home/sky/cs310/SpaceNoita-CS310/src/main/headers/app.h
  /usr/include/GL/gl.h
  /usr/include/GL/glu.h
  /usr/include/alloca.h
