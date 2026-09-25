@@ -1,0 +1,12 @@
+[
+    {
+    "directory": "C:\Users\tomhb\University\cs310\FallingSandIter1\app",
+    "file": "C:\Users\tomhb\University\cs310\FallingSandIter1\app\src\main\cpp\app.cpp",
+    "arguments": [
+        "g++",
+        "-c",
+        "-IC:\Users\tomhb\University\cs310\FallingSandIter1\app\src\main\headers",
+        "C:\Users\tomhb\University\cs310\FallingSandIter1\app\src\main\cpp\app.cpp"
+    ]
+}
+]
