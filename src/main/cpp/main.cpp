@@ -375,26 +375,50 @@ DataPoint* simple_margolus_update(DataPoint* data_buffer, long step,
     bool swapped = false;
     // Defines the rules for when to swap cells
     if (tl_density > bl_density) {
-        if (tl_state == POWDER && bl_state != SOLID) {
+        if ((tl_state == POWDER || tl_state == LIQUID) && bl_state != SOLID) {
             swap_cells(x * 2 + step%2, y*2 + step%2, x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (tr_density > br_density) {
-        if (tr_state == POWDER && br_state != SOLID) {
+        if ((tr_state == POWDER || tr_state == LIQUID) && br_state != SOLID) {
             swap_cells(1 + x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && tl_density > br_density) {
-        if (tl_state == POWDER && br_state != SOLID) {
+        if ((tl_state == POWDER || tl_state == LIQUID) && br_state != SOLID) {
             swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && tr_density > bl_density) {
-        if (tr_state == POWDER && bl_state != SOLID) {
+        if ((tr_state == POWDER || tr_state == LIQUID) && bl_state != SOLID) {
             swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
+    }
+    if (!swapped && tl_density > tr_density) {
+        if ((tl_state == LIQUID) && tr_state != SOLID) {
+            swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2,y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
+    }
+    if (!swapped && bl_density > br_density) {
+        if ((bl_state == LIQUID) && br_state != SOLID) {
+            swap_cells(x * 2 + step%2,1 + y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
+    }
+    if (!swapped && tr_density > tl_density) {
+        if ((tr_state == LIQUID) && tl_state != SOLID) {
+            swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2,y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
+    }
+    if (!swapped && br_density > bl_density) {
+        if ((br_state == LIQUID) && bl_state != SOLID) {
+            swap_cells(1 + x * 2 + step%2,1 + y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
@@ -407,10 +431,14 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
                     int num_updates) {
 
     for (int i = 0; i < num_updates; i++) {
-        if (SPAWN_SAND) {
+        if (SPAWN_SAND && (i + step) % 3 == 0) {
+            spawn_material(20,0,'W',data_buffer);
             spawn_material(3,0,'S',data_buffer);
-            spawn_material(8,0,'C',data_buffer);
+            spawn_material(WORLD_WIDTH - 3,0,'I',data_buffer);
+            spawn_material(1,8,'R',data_buffer);
+            spawn_material(2,8,'R',data_buffer);
             spawn_material(3,8,'R',data_buffer);
+            spawn_material(4,8,'R',data_buffer);
             spawn_material(8,8,'R',data_buffer);
         }
         // Update using margolus neighbourhood.
