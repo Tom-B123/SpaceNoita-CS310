@@ -3,6 +3,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o.d"
   "CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o"
   "CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o.d"
+  "CMakeFiles/FallingSandIter1.dir/src/main/cpp/materials.cpp.o"
+  "CMakeFiles/FallingSandIter1.dir/src/main/cpp/materials.cpp.o.d"
+  "CMakeFiles/FallingSandIter1.dir/src/main/cpp/util.cpp.o"
+  "CMakeFiles/FallingSandIter1.dir/src/main/cpp/util.cpp.o.d"
   "FallingSandIter1"
   "FallingSandIter1.pdb"
 )

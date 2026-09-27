@@ -177,6 +177,54 @@ src/main/cpp/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.s
 .PHONY : src/main/cpp/main.cpp.s
 
+src/main/cpp/materials.o: src/main/cpp/materials.cpp.o
+.PHONY : src/main/cpp/materials.o
+
+# target to build an object file
+src/main/cpp/materials.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/materials.cpp.o
+.PHONY : src/main/cpp/materials.cpp.o
+
+src/main/cpp/materials.i: src/main/cpp/materials.cpp.i
+.PHONY : src/main/cpp/materials.i
+
+# target to preprocess a source file
+src/main/cpp/materials.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/materials.cpp.i
+.PHONY : src/main/cpp/materials.cpp.i
+
+src/main/cpp/materials.s: src/main/cpp/materials.cpp.s
+.PHONY : src/main/cpp/materials.s
+
+# target to generate assembly for a file
+src/main/cpp/materials.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/materials.cpp.s
+.PHONY : src/main/cpp/materials.cpp.s
+
+src/main/cpp/util.o: src/main/cpp/util.cpp.o
+.PHONY : src/main/cpp/util.o
+
+# target to build an object file
+src/main/cpp/util.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/util.cpp.o
+.PHONY : src/main/cpp/util.cpp.o
+
+src/main/cpp/util.i: src/main/cpp/util.cpp.i
+.PHONY : src/main/cpp/util.i
+
+# target to preprocess a source file
+src/main/cpp/util.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/util.cpp.i
+.PHONY : src/main/cpp/util.cpp.i
+
+src/main/cpp/util.s: src/main/cpp/util.cpp.s
+.PHONY : src/main/cpp/util.s
+
+# target to generate assembly for a file
+src/main/cpp/util.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/util.cpp.s
+.PHONY : src/main/cpp/util.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -192,6 +240,12 @@ help:
 	@echo "... src/main/cpp/main.o"
 	@echo "... src/main/cpp/main.i"
 	@echo "... src/main/cpp/main.s"
+	@echo "... src/main/cpp/materials.o"
+	@echo "... src/main/cpp/materials.i"
+	@echo "... src/main/cpp/materials.s"
+	@echo "... src/main/cpp/util.o"
+	@echo "... src/main/cpp/util.i"
+	@echo "... src/main/cpp/util.s"
 .PHONY : help
 
 

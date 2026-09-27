@@ -1,46 +1,29 @@
+#include "materials.h"
 #include <algorithm>
 #include <bitset>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
-
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/filereadstream.h"
-
 #include "app.h"
 
-// Order is important for these 2!
-#include "GL/glew.h"
-#include "GLFW/glfw3.h"
 #include <cstdlib>
 // Add this before including RapidJSON
 
 #include <fstream>
 #include <iostream>
 
-// Information about a given material, from materials.json
-struct Material {
-    char name[128];
-    char colour[8];
-    int density;
-    int state;
-};
+#include"util.h"
+
 
 int sand_count;
 
-int SOLID = 1;
-int LIQUID = 2;
-int POWDER = 3;
-int GAS = 4;
 
 struct DataPoint {
     char material;
     bool updated;
 };
 
-Material material_data[256] = {0};
-
+Material* material_data = new Material[256];
+float* colours = new float[256 * 3];
 // Each rule is one byte, storing the resulting state in its corresponding initial state position
 // Lookup table stores 16 rules for stable/neutral rules for left and for  right configurations, 
 // but only 16 total will be expected.
@@ -58,72 +41,8 @@ bool SHOW_REORDERING = false;
 
 bool SPAWN_SAND = true;
 
-// Get the state integer / enum from a string
-int state_from_string(std::string state_string) {
-        if (!state_string.compare("powder"))      { return POWDER; }
-        else if (!state_string.compare("liquid")) { return LIQUID; }
-        else if (!state_string.compare("gas"))    { return GAS; }
-        else if (!state_string.compare("solid"))  { return SOLID; }
-        return -1;
-}
 
 
-// Locate a given file
-std::string find_shader_file(std::string shader) {
-    std::vector<std::string> search_paths = {
-        "app/src/main/shaders/" + shader,
-        "../app/src/main/shaders/" + shader,
-        "../../app/src/main/shaders/" + shader,
-        "../../../app/src/main/shaders/" + shader,
-        "src/main/shaders/" + shader,
-        "../src/main/shaders/" + shader,
-        "" + shader,
-        "./" + shader
-    };
-
-    for (const auto& path : search_paths) {
-        std::ifstream test(path);
-        if (test.is_open()) {
-            test.close();
-            return path;
-        }
-    }
-
-    return "C:/Users/tomhb/University/cs310/FallingSandIter1/app/src/main/shaders/" + shader;
-}
-
-// Converts a file location into a string containing that files contents.
-std::string get_shader_src(std::string shader) {
-    std::ifstream hello_world_file(find_shader_file(shader));
-    std::string src(std::istreambuf_iterator<char>(hello_world_file), (std::istreambuf_iterator<char>()));
-    return src;
-}
-
-
-GLuint compile_shader(const char* source, GLenum type) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        fprintf(stderr, "Shader compilation failed: %s\n", infoLog);
-        switch (type) {
-            case GL_VERTEX_SHADER: 
-                std::cout << "Error in Vertex shader!";
-                break;
-            case GL_FRAGMENT_SHADER: 
-                std::cout << "Error in Fragment shader!";
-                break;
-        }
-        std::cout << std::endl;
-        return 0;
-    }
-    return shader;
-}
 
 
 DataPoint* init_data_buffer(int w, int h) {
@@ -264,23 +183,6 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
     return render_buffer;
 }
 
-int hex2(char colour[8],int offset) {
-    int total = 0;
-
-    // Convert hex digits to n + 10
-    if (colour[offset+1] >= 'A' && colour[offset+1] <='F') total += colour[offset+1] - 'A' + 10;
-    // Convert numerical digits to n
-    else if (colour[offset+1] >= '0' && colour[offset+1] <='9') total += (colour[offset+1]-'0');
-    else return -1;
-    // Convert hex digits to 16(n + 10)
-    if (colour[offset] >= 'A' && colour[offset] <='F') total += 16 * (colour[offset] - 'A' + 10);
-    // Convert numerical digits to 16(n)
-    else if (colour[offset] >= '0' && colour[offset] <='9') total += 16 * (colour[offset]-'0');
-    else return -1;
-
-    // return total if it is valid hex code, else -1
-    return total;
-}
 
 int main(){
     GLFWwindow* window;
@@ -294,96 +196,6 @@ int main(){
     GLuint vertex_vbo;
     GLuint shader_program;
 
-    float* colours = new float[256 * 3];
-
-
-    // Read the entire file into a string
-    std::string materials_location = find_shader_file("../cpp/materials.json");
-    std::string rules_location = find_shader_file("../cpp/rules.json");
-
-    // std::cout << location << std::endl;
-
-    FILE* materials_file = fopen(materials_location.c_str(), "r");
-
-    if (materials_file == nullptr) {
-        std::cerr << "Failed to locate materials.json!";
-        return -1;
-    }
-
-    // Use a FileReadStream to read the data from the file
-    char readBuffer[65536];
-    rapidjson::FileReadStream materials_json(materials_file, readBuffer,
-                                 sizeof(readBuffer));
-
-    // Parse the JSON data using a Document object
-    rapidjson::Document materials_document;
-    materials_document.ParseStream(materials_json);
-
-    fclose(materials_file);
-
-    FILE* rules_file = fopen(rules_location.c_str(), "r");
-
-    if (rules_file == nullptr) {
-        std::cerr << "Failed to locate rules.json!";
-        return -1;
-    }
-
-    char readBuffer2[65536];
-    rapidjson::FileReadStream rules_json(rules_file, readBuffer2,
-                                 sizeof(readBuffer2));
-
-    // Parse the JSON data using a Document object
-    rapidjson::Document rules_document;
-    rules_document.ParseStream(rules_json);
-
-    // Close the files
-    fclose(rules_file);
-
-    // Loop over all json elements
-    for (rapidjson::Value::ConstMemberIterator itr = 
-            materials_document.MemberBegin();
-            itr != materials_document.MemberEnd(); ++itr)
-    {
-        // Get each key, this is the material code as an ascii character
-        char material_code = itr->name.GetString()[0];
-        Material material;
-
-        // Store the material data inside a material struct, with fixed
-        // size for the name, colour and state strings.
-        for (int i = 0; i < 128; i++) {
-            material.name[i]=itr->value["name"].GetString()[i];
-        } 
-        for (int i = 0; i < 8; i++) {
-            material.colour[i]=itr->value["colour"].GetString()[i];
-        }
-
-        std::string state_string = itr->value["state"].GetString();
-
-        material.state = state_from_string(state_string);
-
-        material.density = itr->value["density"].GetInt();
-
-        material_data[material_code] = material;
-    }
-
-    for (int material = 0; material < 256; material++) {
-
-        char* colour = material_data[material].colour;
-
-        // Convert the raw #RRGGBB- code into 3 integers from 0-256
-        int r = hex2(colour,1);
-        int g = hex2(colour,3);
-        int b = hex2(colour,5);
-
-        if (r < 0 || g < 0 || b < 0) { continue; }
-        if (SHOW_MATERIAL_COLOURS) {
-            std::cout << material_data[material].name << ": " << r << "," << g << "," << b << std::endl;
-        }
-        
-        colours[3 * material + 0] = r/256.0;
-        colours[3 * material + 1] = g/256.0;
-        colours[3 * material + 2] = b/256.0;
-    }
 
     // ==================== Initialise window ======================
 
@@ -413,6 +225,16 @@ int main(){
     glewInit();
 
     // =========================== Initialise buffers ===============
+
+    for (int material_code = 0; material_code < 256; material_code++) {
+        material_data[material_code] = {0};
+    }
+    load_materials(colours,material_data);
+
+    for (int material_code = 0; material_code < 256; material_code++) {
+        Material material = material_data[material_code];
+        // std::cout << material.name << ": " << material.colour << std::endl;
+    }
 
     // Create a VBO to hold our pixel data (for PBO async transfer - optional)
     glGenBuffers(1, &pixel_vbo);
@@ -567,8 +389,11 @@ int main(){
 
     // Terminate GLFW
     glfwTerminate();
-
+    
+    free(colours);
+    free(material_data);
     std::cout << "Exit" << std::endl;
+
 
     return 0;
 }
