@@ -12,11 +12,18 @@
 #include <fstream>
 // #include <conio.h>
 #include <stdio.h>
-// #include <Windows.h>
+
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
+#ifdef __linux__
+#include<unistd.h>
+#endif
 #include <string>
 
-const int WORLD_WIDTH = 4;
-const int WORLD_HEIGHT = 4;
+const int WORLD_WIDTH = 32;
+const int WORLD_HEIGHT = 32;
 const double PIXEL_SCALE = 1;
 const int CELL_WIDTH = 2;
 const int CELL_HEIGHT = 2;

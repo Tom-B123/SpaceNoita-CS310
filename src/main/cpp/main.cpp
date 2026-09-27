@@ -19,14 +19,6 @@
 #include <fstream>
 #include <iostream>
 
-// stores priority so order can be consitent, solids process 1st when mixed states in neighbourhood
-int SOLID=0;
-int POWDER=1;
-int LIQUID=2;
-int GAS=3;
-
-#define NUM_STATES 4
-
 // Information about a given material, from materials.json
 struct Material {
     char name[128];
@@ -34,6 +26,13 @@ struct Material {
     int density;
     int state;
 };
+
+int sand_count;
+
+int SOLID = 1;
+int LIQUID = 2;
+int POWDER = 3;
+int GAS = 4;
 
 struct DataPoint {
     char material;
@@ -46,23 +45,25 @@ Material material_data[256] = {0};
 // Lookup table stores 16 rules for stable/neutral rules for left and for  right configurations, 
 // but only 16 total will be expected.
 // Each state has unique rules.
-char rules[NUM_STATES * 3 * 16] = {0};
+// char rules[NUM_STATES * 3 * 16] = {0};
 
 
 bool SHOW_MATERIAL_COUNTS = false;
-bool SHOW_MATERIAL_CHANGES = true;
+bool SHOW_MATERIAL_CHANGES = false;
 bool SHOW_MATERIAL_COLOURS = false;
 bool SHOW_RULES_DEBUG = false;
 bool SHOW_RULES = false;
 bool SHOW_BITSETS = false;
 bool SHOW_REORDERING = false;
 
+bool SPAWN_SAND = true;
+
 // Get the state integer / enum from a string
 int state_from_string(std::string state_string) {
-        if (!state_string.compare("powder"))      { return POWDER; }
-        else if (!state_string.compare("liquid")) { return LIQUID; }
-        else if (!state_string.compare("gas"))    { return GAS; }
-        else if (!state_string.compare("solid"))  { return SOLID; }
+        // if (!state_string.compare("powder"))      { return POWDER; }
+        // else if (!state_string.compare("liquid")) { return LIQUID; }
+        // else if (!state_string.compare("gas"))    { return GAS; }
+        // else if (!state_string.compare("solid"))  { return SOLID; }
         return -1;
 }
 
@@ -211,7 +212,7 @@ DataPoint* simple_sand_update(DataPoint* data_buffer, long step,
         swapped = true;
     }
     if (!swapped && material_data[tr].state != SOLID && material_data[tr].density > material_data[bl].density) {
-        data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = br;
+        data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH].material = bl;
         data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH].material = tr;
         swapped = true;
     }
@@ -237,14 +238,14 @@ DataPoint* bitmap_update(DataPoint* data_buffer, long step,
 
         // Lookup the neutral, left and right rules for the given density and state,
         // E.G. state = solid or powder and each has unique rules defined in the rules.json
-        char resultN = rules[(3 * state + 0) * 16 + density_map[i]];
+        // char resultN = rules[(3 * state + 0) * 16 + density_map[i]];
         // Left and right rules
-        char resultL = rules[(3 * state + 1) * 16 + density_map[i]];
-        char resultR = rules[(3 * state + 2) * 16 + density_map[i]];
+        // char resultL = rules[(3 * state + 1) * 16 + density_map[i]];
+        // char resultR = rules[(3 * state + 2) * 16 + density_map[i]];
 
         // We assume there can never be a left AND right AND neutral rule for any 
         // state <-> denisty map pair; only 1.
-        results[i] = resultN + resultL + resultR;
+        // results[i] = resultN + resultL + resultR;
         if (SHOW_BITSETS) std::cout << material_data[material].name << ",";
     }
 
@@ -305,15 +306,13 @@ DataPoint* bitmap_update(DataPoint* data_buffer, long step,
             DataPoint val = data_buffer[((y*2 +(j/2 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (j%2 + step%2 + (x * 2))%WORLD_WIDTH];
             if ((difference_mask[i] & mask) > 0) cells[ind] = val.material;
         }
-        if ((difference_mask[i] & 8) > 0) std::cout << "TL changed!" << std::endl;
-        if ((difference_mask[i] & 4) > 0) std::cout << "TR changed!" << std::endl;
-        if ((difference_mask[i] & 2) > 0) std::cout << "BL changed!" << std::endl;
-        if ((difference_mask[i] & 1) > 0) std::cout << "BR changed!" << std::endl;
+        // if ((difference_mask[i] & 8) > 0) std::cout << "TL changed!" << std::endl;
+        // if ((difference_mask[i] & 4) > 0) std::cout << "TR changed!" << std::endl;
+        // if ((difference_mask[i] & 2) > 0) std::cout << "BL changed!" << std::endl;
+        // if ((difference_mask[i] & 1) > 0) std::cout << "BR changed!" << std::endl;
         char n_mat = 'A';
         if (SHOW_MATERIAL_CHANGES) std::cout << "Set [" << n_mat << "] at "<< (i%2 + step%2 + (x * 2))%WORLD_WIDTH << "," << ((y*2 +(i/2 + step%2))%WORLD_HEIGHT) << std::endl;
     }
-
-
 
         //     int mask = 8;
         //     for (int j = 0; j < 4; j++) {
@@ -334,30 +333,82 @@ DataPoint* bitmap_update(DataPoint* data_buffer, long step,
 
     free(density_map);
 
-    std::cout << "update done!" << std::endl;
+    // std::cout << "update done!" << std::endl;
     return data_buffer;
 }
 
 
+// Takes two positions and swaps their data in the databuffer
+void swap_cells(int x1, int y1, int x2, int y2,DataPoint* data_buffer) {
+    DataPoint tmp = data_buffer[(y1%WORLD_HEIGHT) * WORLD_WIDTH + (x1%WORLD_WIDTH)];
+    data_buffer[(y1%WORLD_HEIGHT) * WORLD_WIDTH + (x1%WORLD_WIDTH)] = data_buffer[(y2%WORLD_HEIGHT) * WORLD_WIDTH + (x2%WORLD_WIDTH)];
+    data_buffer[(y2%WORLD_HEIGHT) * WORLD_WIDTH + (x2%WORLD_WIDTH)] = tmp;
+}
+
+DataPoint* simple_margolous_update(DataPoint* data_buffer, long step,
+                            int x, int y) {
+
+    if (y*2 + step%2 >= WORLD_HEIGHT - 1) { return data_buffer; }
+    // Get the data for the top left, top right, bottom left and bottom right cells in the 2x2 grid
+    DataPoint tl = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH];
+    DataPoint tr = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH];
+    DataPoint bl = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH];
+    DataPoint br = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH];
+
+    // Get the corresponding densities
+    int tl_density = material_data[tl.material].density;
+    int tr_density = material_data[tr.material].density;
+    int bl_density = material_data[bl.material].density;
+    int br_density = material_data[br.material].density;
+
+    bool swapped = false;
+    // Defines the rules for when to swap cells
+    if (tl_density > bl_density) {
+        swap_cells(x * 2 + step%2, y*2 + step%2, x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+        swapped = true;
+    }
+    if (tr_density > br_density) {
+        swap_cells(1 + x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+        swapped = true;
+    }
+    if (!swapped && tl_density > br_density) {
+        swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+        swapped = true;
+    }
+    if (!swapped && tr_density > bl_density) {
+        swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+        swapped = true;
+    }
+
+    return data_buffer;
+}
 char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
                     int num_updates) {
 
     for (int i = 0; i < num_updates; i++) {
-        data_buffer[0].material = 'S';
+        if (SPAWN_SAND)
+            if (data_buffer[0].material != 'S') {
+                sand_count++;
+                data_buffer[0].material = 'S';
+            }
         // Update using margolous neighbourhood.
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
                 // data_buffer = simple_sand_update(data_buffer,step + i,x,y);
-                data_buffer = bitmap_update(data_buffer,step + i,x,y);
+                // data_buffer = bitmap_update(data_buffer,step + i,x,y);
+                data_buffer = simple_margolous_update(data_buffer,step + i,x,y);
             }
         }
     }
 
+    int cur_count = 0;
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
+            if (data_buffer[y*WORLD_WIDTH + x].material == 'S') cur_count++;
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
         }
     }
+    if (SHOW_MATERIAL_COUNTS) std::cout << cur_count << ", expecting: " << sand_count << std::endl;
 
     return render_buffer;
 }
@@ -481,7 +532,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(3 * state+0) * 16 + start] = result;
+                // rules[(3 * state+0) * 16 + start] = result;
             }
             start = -1; result = -1;
             if (i < stable.Size()) {
@@ -508,7 +559,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(3*state+0) * 16 + start] = result;
+                // rules[(3*state+0) * 16 + start] = result;
             }
             start=-1;result=-1;
             if (i < left.Size()) {
@@ -535,7 +586,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(3*state+1) * 16 + start] = result;
+                // rules[(3*state+1) * 16 + start] = result;
             }
             start=-1;result=-1;
             if (i < right.Size()) {
@@ -562,7 +613,7 @@ int main(){
             }
             if (start > -1 && result > -1) {
                 if (SHOW_RULES_DEBUG) std::cout << std::bitset<8>(start) << "->" << std::bitset<8>(result) << std::endl;
-                rules[(3*state+2) * 16 + start] = result;
+                // rules[(3*state+2) * 16 + start] = result;
             }
             // if (rules[(state+0) * 16 + start] == 0 &&
             //     rules[(state+1) * 16 + start] == 0 &&
@@ -572,15 +623,15 @@ int main(){
         }
     }
     if (SHOW_RULES) {
-        for (int i = 0; i < NUM_STATES; i++) {
-            std::cout << "state: " << i<<std::endl;
-            for (int j = 0; j < 3; j++) {
-                std::cout << "type: " << j<<std::endl;
-                for (int k = 0; k < 16; k++) {
-                    std::cout << std::bitset<8>(k) << "->" << std::bitset<8>(rules[i * 3 * 16 + j * 16 + k]) << std::endl;
-                }
-            }
-        }
+        // for (int i = 0; i < NUM_STATES; i++) {
+        //     std::cout << "state: " << i<<std::endl;
+        //     for (int j = 0; j < 3; j++) {
+        //         std::cout << "type: " << j<<std::endl;
+        //         for (int k = 0; k < 16; k++) {
+        //             // std::cout << std::bitset<8>(k) << "->" << std::bitset<8>(rules[i * 3 * 16 + j * 16 + k]) << std::endl;
+        //         }
+        //     }
+        // }
     }
 
     // Loop over all json elements
@@ -764,11 +815,12 @@ int main(){
         }
     }
 
+    data_buffer[0].material = 'S';
     // =============== Main Loop ===============================
 
     unsigned long step = 0;
 
-    int NUM_UPDATES = 3;
+    int NUM_UPDATES = 1;
 
     while (!glfwWindowShouldClose(window)) {
         // Sleep(10);
@@ -784,7 +836,7 @@ int main(){
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         
-        // Sleep(500);
+        usleep(30000);
         render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES);
 
         step+=NUM_UPDATES;
