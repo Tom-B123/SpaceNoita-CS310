@@ -60,10 +60,10 @@ bool SPAWN_SAND = true;
 
 // Get the state integer / enum from a string
 int state_from_string(std::string state_string) {
-        // if (!state_string.compare("powder"))      { return POWDER; }
-        // else if (!state_string.compare("liquid")) { return LIQUID; }
-        // else if (!state_string.compare("gas"))    { return GAS; }
-        // else if (!state_string.compare("solid"))  { return SOLID; }
+        if (!state_string.compare("powder"))      { return POWDER; }
+        else if (!state_string.compare("liquid")) { return LIQUID; }
+        else if (!state_string.compare("gas"))    { return GAS; }
+        else if (!state_string.compare("solid"))  { return SOLID; }
         return -1;
 }
 
@@ -345,7 +345,14 @@ void swap_cells(int x1, int y1, int x2, int y2,DataPoint* data_buffer) {
     data_buffer[(y2%WORLD_HEIGHT) * WORLD_WIDTH + (x2%WORLD_WIDTH)] = tmp;
 }
 
-DataPoint* simple_margolous_update(DataPoint* data_buffer, long step,
+// Sets the material at a given position, replacing air
+void spawn_material(int x, int y, char material_id, DataPoint* data_buffer) {
+    if (data_buffer[y * WORLD_WIDTH + x].material == ' ') {
+        data_buffer[y * WORLD_WIDTH + x].material = material_id;
+    }
+}
+
+DataPoint* simple_margolus_update(DataPoint* data_buffer, long step,
                             int x, int y) {
 
     if (y*2 + step%2 >= WORLD_HEIGHT - 1) { return data_buffer; }
@@ -361,42 +368,57 @@ DataPoint* simple_margolous_update(DataPoint* data_buffer, long step,
     int bl_density = material_data[bl.material].density;
     int br_density = material_data[br.material].density;
 
+    int tl_state = material_data[tl.material].state;
+    int tr_state = material_data[tr.material].state;
+    int bl_state = material_data[bl.material].state;
+    int br_state = material_data[br.material].state;
     bool swapped = false;
     // Defines the rules for when to swap cells
     if (tl_density > bl_density) {
-        swap_cells(x * 2 + step%2, y*2 + step%2, x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
-        swapped = true;
+        if (tl_state == POWDER && bl_state != SOLID) {
+            swap_cells(x * 2 + step%2, y*2 + step%2, x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
     }
     if (tr_density > br_density) {
-        swap_cells(1 + x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
-        swapped = true;
+        if (tr_state == POWDER && br_state != SOLID) {
+            swap_cells(1 + x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
     }
     if (!swapped && tl_density > br_density) {
-        swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
-        swapped = true;
+        if (tl_state == POWDER && br_state != SOLID) {
+            swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
     }
     if (!swapped && tr_density > bl_density) {
-        swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
-        swapped = true;
+        if (tr_state == POWDER && bl_state != SOLID) {
+            swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
+            swapped = true;
+        }
     }
 
     return data_buffer;
 }
+
+
 char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
                     int num_updates) {
 
     for (int i = 0; i < num_updates; i++) {
-        if (SPAWN_SAND)
-            if (data_buffer[0].material != 'S') {
-                sand_count++;
-                data_buffer[0].material = 'S';
-            }
-        // Update using margolous neighbourhood.
+        if (SPAWN_SAND) {
+            spawn_material(3,0,'S',data_buffer);
+            spawn_material(8,0,'C',data_buffer);
+            spawn_material(3,8,'R',data_buffer);
+            spawn_material(8,8,'R',data_buffer);
+        }
+        // Update using margolus neighbourhood.
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
                 // data_buffer = simple_sand_update(data_buffer,step + i,x,y);
                 // data_buffer = bitmap_update(data_buffer,step + i,x,y);
-                data_buffer = simple_margolous_update(data_buffer,step + i,x,y);
+                data_buffer = simple_margolus_update(data_buffer,step + i,x,y);
             }
         }
     }
@@ -815,8 +837,16 @@ int main(){
         }
     }
 
-    data_buffer[0].material = 'S';
+    // data_buffer[WORLD_WIDTH + 0].material = 'S';
+    // data_buffer[WORLD_WIDTH + 2].material = 'S';
+    // data_buffer[WORLD_WIDTH + 3].material = 'S';
+    // data_buffer[WORLD_WIDTH + 4].material = 'S';
+    //
+    //
+    // data_buffer[0].material = 'C';
+    // data_buffer[2].material = 'C';
     // =============== Main Loop ===============================
+    //
 
     unsigned long step = 0;
 
