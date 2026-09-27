@@ -8,9 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/sky/cs310/SpaceNoita-CS310/src/main/cpp/graphics.cpp" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o" "gcc" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o.d"
-  "/home/sky/cs310/SpaceNoita-CS310/src/main/cpp/main.cpp" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o" "gcc" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o.d"
-  "" "FallingSandIter1" "gcc" "CMakeFiles/FallingSandIter1.dir/link.d"
+  "/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/src/main/cpp/graphics.cpp" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o" "gcc" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/graphics.cpp.o.d"
+  "/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/src/main/cpp/main.cpp" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o" "gcc" "CMakeFiles/FallingSandIter1.dir/src/main/cpp/main.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

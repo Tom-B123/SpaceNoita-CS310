@@ -1,3 +1,3 @@
-/home/sky/cs310/SpaceNoita-CS310/build/CMakeFiles/FallingSandIter1.dir
-/home/sky/cs310/SpaceNoita-CS310/build/CMakeFiles/edit_cache.dir
-/home/sky/cs310/SpaceNoita-CS310/build/CMakeFiles/rebuild_cache.dir
+/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/build/CMakeFiles/FallingSandIter1.dir
+/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/build/CMakeFiles/edit_cache.dir
+/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/build/CMakeFiles/rebuild_cache.dir
