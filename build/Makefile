@@ -129,6 +129,30 @@ FallingSandIter1/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/build
 .PHONY : FallingSandIter1/fast
 
+src/main/cpp/engine.o: src/main/cpp/engine.cpp.o
+.PHONY : src/main/cpp/engine.o
+
+# target to build an object file
+src/main/cpp/engine.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/engine.cpp.o
+.PHONY : src/main/cpp/engine.cpp.o
+
+src/main/cpp/engine.i: src/main/cpp/engine.cpp.i
+.PHONY : src/main/cpp/engine.i
+
+# target to preprocess a source file
+src/main/cpp/engine.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/engine.cpp.i
+.PHONY : src/main/cpp/engine.cpp.i
+
+src/main/cpp/engine.s: src/main/cpp/engine.cpp.s
+.PHONY : src/main/cpp/engine.s
+
+# target to generate assembly for a file
+src/main/cpp/engine.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/FallingSandIter1.dir/build.make CMakeFiles/FallingSandIter1.dir/src/main/cpp/engine.cpp.s
+.PHONY : src/main/cpp/engine.cpp.s
+
 src/main/cpp/graphics.o: src/main/cpp/graphics.cpp.o
 .PHONY : src/main/cpp/graphics.o
 
@@ -234,6 +258,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... FallingSandIter1"
+	@echo "... src/main/cpp/engine.o"
+	@echo "... src/main/cpp/engine.i"
+	@echo "... src/main/cpp/engine.s"
 	@echo "... src/main/cpp/graphics.o"
 	@echo "... src/main/cpp/graphics.i"
 	@echo "... src/main/cpp/graphics.s"
