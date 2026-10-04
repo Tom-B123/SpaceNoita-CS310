@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/src/main/headers -I/dcs/24/u5624767/public_html/cs310/SpaceNoita-CS310/src/main/headers/include
+CXX_INCLUDES = -I/dcs/24/u5624767/work/year3/cs310/SpaceNoita-CS310/src/main/headers -I/dcs/24/u5624767/work/year3/cs310/SpaceNoita-CS310/src/main/headers/include
 
 CXX_FLAGS = -std=gnu++17
 
