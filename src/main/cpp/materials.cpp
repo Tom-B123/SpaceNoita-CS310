@@ -74,8 +74,6 @@ int load_materials(float* colours,Material* material_data) {
         material.density = itr->value["density"].GetInt();
 
         material_data[material_code] = material;
-
-        std::cout << material.name << ": " << material.colour << std::endl;
     }
 
     for (int material = 0; material < 256; material++) {

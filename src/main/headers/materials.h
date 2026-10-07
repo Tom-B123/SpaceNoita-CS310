@@ -15,5 +15,6 @@ struct DataPoint {
     char material;
     bool updated;
 };
+
 int load_materials(float* colours,Material* material_data);
 #endif

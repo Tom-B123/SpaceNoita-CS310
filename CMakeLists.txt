@@ -3,9 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 project(FallingSandIter1 LANGUAGES CXX)
 
 # Enabling this appends compile commands to compile_commands.json
-set(CMAKE_EXPORT_COMPILE_COMMANDS NO)
+set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 
-# Set C++ standard - adjust as needed for your project
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

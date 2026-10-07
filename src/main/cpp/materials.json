@@ -46,5 +46,11 @@
         "colour":"#555555",
         "density":500000,
         "state":"solid"
+    },
+    "P":{
+        "name":"Player",
+        "colour":"#FF0000",
+        "density":900000,
+        "state":"solid"
     }
 }

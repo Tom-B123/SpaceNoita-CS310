@@ -23,7 +23,7 @@
 #endif
 #include <string>
 
-const int WORLD_WIDTH = 320;
+const int WORLD_WIDTH = 540;
 const int WORLD_HEIGHT = 320;
 const double PIXEL_SCALE = 1;
 const int CELL_WIDTH = 2;

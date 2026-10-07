@@ -37,49 +37,49 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     bool swapped = false;
     // Defines the rules for when to swap cells
     if (tl_density > bl_density) {
-        if ((tl_state == POWDER || tl_state == LIQUID) && bl_state != SOLID) {
+        if ((tl_state == POWDER || tl_state == LIQUID || tl_state == GAS) && bl_state != SOLID) {
             swap_cells(x * 2 + step%2, y*2 + step%2, x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (tr_density > br_density) {
-        if ((tr_state == POWDER || tr_state == LIQUID) && br_state != SOLID) {
+        if ((tr_state == POWDER || tr_state == LIQUID || tr_state == GAS) && br_state != SOLID) {
             swap_cells(1 + x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && tl_density > br_density) {
-        if ((tl_state == POWDER || tl_state == LIQUID) && br_state != SOLID) {
+        if ((tl_state == POWDER || tl_state == LIQUID || tl_state == GAS) && br_state != SOLID) {
             swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && tr_density > bl_density) {
-        if ((tr_state == POWDER || tr_state == LIQUID) && bl_state != SOLID) {
+        if ((tr_state == POWDER || tr_state == LIQUID || tr_state == GAS) && bl_state != SOLID) {
             swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && tl_density > tr_density) {
-        if ((tl_state == LIQUID) && tr_state != SOLID) {
+        if ((tl_state == LIQUID || tl_state == GAS) && tr_state != SOLID) {
             swap_cells(x * 2 + step%2, y*2 + step%2,1 + x*2 + step % 2,y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && bl_density > br_density) {
-        if ((bl_state == LIQUID) && br_state != SOLID) {
+        if ((bl_state == LIQUID || bl_state == GAS) && br_state != SOLID) {
             swap_cells(x * 2 + step%2,1 + y*2 + step%2,1 + x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && tr_density > tl_density) {
-        if ((tr_state == LIQUID) && tl_state != SOLID) {
+        if ((tr_state == LIQUID || tr_state == GAS) && tl_state != SOLID) {
             swap_cells(1 + x * 2 + step%2, y*2 + step%2,x*2 + step % 2,y * 2 + step % 2,data_buffer);
             swapped = true;
         }
     }
     if (!swapped && br_density > bl_density) {
-        if ((br_state == LIQUID) && bl_state != SOLID) {
+        if ((br_state == LIQUID || br_state == GAS) && bl_state != SOLID) {
             swap_cells(1 + x * 2 + step%2,1 + y*2 + step%2,x*2 + step % 2, 1 + y * 2 + step % 2,data_buffer);
             swapped = true;
         }

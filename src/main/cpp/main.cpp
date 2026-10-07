@@ -1,6 +1,7 @@
 #include "materials.h"
 #include <algorithm>
 #include <bitset>
+#include <map>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include "app.h"
@@ -17,25 +18,6 @@ int sand_count;
 
 Material* material_data = new Material[256];
 float* colours = new float[256 * 3];
-// Each rule is one byte, storing the resulting state in its corresponding initial state position
-// Lookup table stores 16 rules for stable/neutral rules for left and for  right configurations, 
-// but only 16 total will be expected.
-// Each state has unique rules.
-// char rules[NUM_STATES * 3 * 16] = {0};
-
-
-bool SHOW_MATERIAL_COUNTS = false;
-bool SHOW_MATERIAL_CHANGES = false;
-bool SHOW_MATERIAL_COLOURS = false;
-bool SHOW_RULES_DEBUG = false;
-bool SHOW_RULES = false;
-bool SHOW_BITSETS = false;
-bool SHOW_REORDERING = false;
-
-bool SPAWN_SAND = true;
-
-
-
 
 
 DataPoint* init_data_buffer(int w, int h) {
@@ -51,27 +33,13 @@ DataPoint* init_data_buffer(int w, int h) {
     return data_buffer;
 }
 
-
-
 char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
-                    int num_updates) {
+                    int num_updates, float player_x, float player_y) {
 
     for (int i = 0; i < num_updates; i++) {
-        if (SPAWN_SAND && (i + step) % 3 == 0) {
-            spawn_material(20,0,'W',data_buffer);
-            spawn_material(3,0,'S',data_buffer);
-            spawn_material(WORLD_WIDTH - 3,0,'I',data_buffer);
-            spawn_material(1,8,'R',data_buffer);
-            spawn_material(2,8,'R',data_buffer);
-            spawn_material(3,8,'R',data_buffer);
-            spawn_material(4,8,'R',data_buffer);
-            spawn_material(8,8,'R',data_buffer);
-        }
         // Update using margolus neighbourhood.
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
-                // data_buffer = simple_sand_update(data_buffer,step + i,x,y);
-                // data_buffer = bitmap_update(data_buffer,step + i,x,y);
                 data_buffer = simple_margolus_update(material_data,data_buffer,step + i,x,y);
             }
         }
@@ -84,17 +52,54 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
         }
     }
-    if (SHOW_MATERIAL_COUNTS) std::cout << cur_count << ", expecting: " << sand_count << std::endl;
+
+    render_buffer[((int)player_y % WORLD_HEIGHT)  * WORLD_WIDTH + ((int)player_x % WORLD_WIDTH)] = 'P';
 
     return render_buffer;
 }
 
+// Use keypressed and keyreleased to track which keys are currently held down
+#define NUM_KEYS 349
+
+bool key_state[NUM_KEYS];
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if(action == GLFW_PRESS) 
+        key_state[key] = true;
+    if(action == GLFW_RELEASE) {
+        key_state[key] = false;
+    }
+}
+
+void input(GLFWwindow* window, float* player_x, float* player_y, float dt) {
+    // Iterate over all keys to see which are held or not
+    for (int key = 0; key < NUM_KEYS; key++) {
+        if (key_state[key] == false) continue;
+        switch (key) {
+            case GLFW_KEY_ESCAPE: 
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+                break;
+            case GLFW_KEY_W:
+                *player_y = *player_y - 1.0f * dt;
+                break;
+            case GLFW_KEY_A:
+                *player_x = *player_x - 1.0f * dt;
+                break;
+            case GLFW_KEY_S:
+                *player_y = *player_y + 1.0f * dt;
+                break;
+            case GLFW_KEY_D:
+                *player_x = *player_x + 1.0f * dt;
+                break;
+        }
+    }
+}
 
 int main(){
     GLFWwindow* window;
     std::string vertexShaderSource;
     std::string fragmentShaderSource;
-
 
     GLuint pixel_vbo;
     GLuint texture;
@@ -102,6 +107,9 @@ int main(){
     GLuint vertex_vbo;
     GLuint shader_program;
 
+
+    float player_x = 0;
+    float player_y = 0;
 
     // ==================== Initialise window ======================
 
@@ -139,7 +147,6 @@ int main(){
 
     for (int material_code = 0; material_code < 256; material_code++) {
         Material material = material_data[material_code];
-        // std::cout << material.name << ": " << material.colour << std::endl;
     }
 
     // Create a VBO to hold our pixel data (for PBO async transfer - optional)
@@ -198,9 +205,9 @@ int main(){
     glDeleteShader(fragmentShader);
 
     // Magenta = undefined material colour
-
     glUseProgram(shader_program);
 
+    // Sends the material - colour data from materials.json to the shader
     GLint coloursLoc = glGetUniformLocation(shader_program, "colours");
     if (coloursLoc == -1) {
         fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
@@ -211,13 +218,13 @@ int main(){
         // positions   // texture coords
         -1.0f,  1.0f,  0.0f, 0.0f,  // top-left
         -1.0f, -1.0f,  0.0f, 1.0f,  // bottom-left
-        1.0f, -1.0f,  1.0f, 1.0f,  // bottom-right
-        1.0f,  1.0f,  1.0f, 0.0f   // top-right
+        1.0f, -1.0f,  1.0f, 1.0f,   // bottom-right
+        1.0f,  1.0f,  1.0f, 0.0f    // top-right
     };
 
-    // Create VAO and VBO for the quad (different VBO!)
+    // Create VAO and VBO for the quad
     glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vertex_vbo);  // Different from pixel_vbo
+    glGenBuffers(1, &vertex_vbo);
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -232,46 +239,62 @@ int main(){
 
     glBindVertexArray(0);  // Unbind
 
+    glfwSetKeyCallback(window, key_callback);
     // =============== Engine setup ============================
 
     // Create the world as 1 byte per pixel
     char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
     DataPoint* data_buffer = init_data_buffer(WORLD_WIDTH,WORLD_HEIGHT);
 
-    char choices[5] = {' ',' ',' ',' ',' '};
-
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
-            char material = choices[(y * WORLD_WIDTH + x) % 5];
-            render_buffer[y * WORLD_WIDTH + x] = material;
-            data_buffer[y * WORLD_WIDTH + x].material = material;
+            render_buffer[y * WORLD_WIDTH + x] = ' ';
+            data_buffer[y * WORLD_WIDTH + x].material = ' ';
         }
     }
 
     // =============== Main Loop ===============================
     unsigned long step = 0;
 
-    int NUM_UPDATES = 10;
+    int NUM_UPDATES = 3;
+
+    for (int i = 0; i < WORLD_HEIGHT; i++) {
+        spawn_material(0, i, 'R',data_buffer);
+        spawn_material(WORLD_WIDTH-1, i, 'R',data_buffer);
+    }
 
     while (!glfwWindowShouldClose(window)) {
-        // Sleep(10);
+        if (step % 3 == 0) {
+            spawn_material(3, 0, 'S', data_buffer);
+            spawn_material(7, 0, 'I', data_buffer);
+            spawn_material(WORLD_WIDTH - 3, 5, 'W', data_buffer);
+            spawn_material(WORLD_WIDTH - 5, 5, 'W', data_buffer);
+            spawn_material(WORLD_WIDTH - 7, 5, 'W', data_buffer);
+            spawn_material(WORLD_WIDTH / 2, WORLD_HEIGHT-5, 's', data_buffer);
+        }
+        // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
+
+        // Enable the GL shader and draw the current frame data to the screen
         glUseProgram(shader_program);
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
+        // Update the screen and check for user input
         glfwSwapBuffers(window);
         glfwPollEvents();
-        if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
-        
+        input(window,&player_x,&player_y,1.0f);
+
+        // Sleep n microseconds
         usleep(30000);
-        render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES);
+
+        // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
+        render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES,player_x,player_y);
 
         step+=NUM_UPDATES;
 
+        // Update the texture to store the render_buffer's data.
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 
                 GL_RED, GL_UNSIGNED_BYTE, render_buffer);
@@ -295,9 +318,13 @@ int main(){
 
     // Terminate GLFW
     glfwTerminate();
-    
+
     free(colours);
     free(material_data);
+
+    free(render_buffer);
+    free(data_buffer);
+
     std::cout << "Exit" << std::endl;
 
 
