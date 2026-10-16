@@ -26,16 +26,13 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     if (y*2 + step%2 >= WORLD_HEIGHT - 1) { return data_buffer; }
 
     int chunk_size = WORLD_WIDTH;
+
     // Which direction is "up"? 0 -> North, 1 -> East etc.
     int direction = step / 600;
 
     direction = direction % 4;
-    
-    // if (direction == 3 || direction == 1) { 
-    //     int tmp = x; x = y; y = tmp;
-    //     tmp = WORLD_WIDTH; width = height; height = tmp;
-    // }
 
+    // Get the normalised x,y position for the top left corner
     int nx = 2*x + (step%2);
     int ny = 2*y + (step%2);
     int indicies[] = {
@@ -45,8 +42,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
         (((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size   // [ .]
     };
 
-    bool valid_x = nx < chunk_size - 1;
-    bool valid_y = ny < chunk_size - 1;
+    // The order in which top left, top right, bottom left and bottom right cells
+    // are interpretted to "trick" the simulation into giving the right logic.
+    // 0,1,2,3 -> 1,3,0,2 rotates the rules to work horizontally.
+    // 2 more rules for each reflection
     int orderings[] = {
         //N:
         0,1,2,3,
@@ -63,19 +62,14 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     int index3 = indicies[orderings[4 * direction + 2]];
     int index4 = indicies[orderings[4 * direction + 3]];
 
-    // Get the data for the top left, top right, bottom left and bottom right cells in the 2x2 grid
-    // DataPoint tl = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH];
-    // DataPoint tr = data_buffer[((y*2 +(step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH];
-    // DataPoint bl = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (step%2 + (x * 2))%WORLD_WIDTH];
-    // DataPoint br = data_buffer[((y*2 +(1 + step%2))%WORLD_HEIGHT) * WORLD_WIDTH + (1 + step%2 + (x * 2))%WORLD_WIDTH];
-    
+    // Get the data from the cell, oriented with the top cells pointing towards [direction] 
+    // and the bottom cells pointing away.
     DataPoint tl = data_buffer[index1];
     DataPoint tr = data_buffer[index2];
     DataPoint bl = data_buffer[index3];
     DataPoint br = data_buffer[index4];
 
-
-    // Get the corresponding densities
+    // Get the corresponding densities and states
     int tl_density = material_data[tl.material].density;
     int tr_density = material_data[tr.material].density;
     int bl_density = material_data[bl.material].density;
@@ -85,7 +79,9 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     int tr_state = material_data[tr.material].state;
     int bl_state = material_data[bl.material].state;
     int br_state = material_data[br.material].state;
+
     bool swapped = false;
+
     // Defines the rules for when to swap cells
     if (tl_density > bl_density) {
         if ((tl_state == POWDER || tl_state == LIQUID || tl_state == GAS) && bl_state != SOLID) {
