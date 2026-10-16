@@ -1,6 +1,8 @@
 #include "engine.h"
 #include "app.h"
 #include "materials.h"
+#include <algorithm>
+#include <vector>
 // Takes two positions and swaps their data in the databuffer
 void swap_cells(int x1, int y1, int x2, int y2,DataPoint* data_buffer) {
     DataPoint tmp = data_buffer[(y1%WORLD_HEIGHT) * WORLD_WIDTH + (x1%WORLD_WIDTH)];
@@ -20,13 +22,72 @@ void spawn_material(int x, int y, char material_id, DataPoint* data_buffer) {
     }
 }
 
+// Return the index of the largest of four floats, using 3 conditionals
+int largest_of_four(float A, float B, float C, float D) {
+    if (A > B) {
+        if (A > C) {
+            if (A > D) {
+                // A is largest
+                return 0;
+            }   else {
+                // D is largest
+                return 3;
+            }
+        }   else {
+            if (C > D) {
+                // C is largest
+                return 2;
+            }   else {
+                // D is largest
+                return 3;
+            }
+        }
+        // B > A case
+    }   else {
+        if (B > C) {
+            if (B > D) {
+                // A is largest
+                return 1;
+            }   else {
+                // D is largest
+                return 3;
+            }
+        }   else {
+            if (C > D) {
+                // C is largest
+                return 2;
+            }   else {
+                // D is largest
+                return 3;
+            }
+        }
+    }
+}
+
+int next_direction(DataPoint* data) {
+    // based on Bresenhams (from wikipedia)
+    
+    // Subtract the currently moved steps from the remaining velocity.
+    float x_vel = data->x_vel - data->frame_x_vel;
+    float y_vel = data->y_vel - data->frame_y_vel;
+
+    // Decide which direction is better
+    
+    // Return this direction and update the value of frame_vel
+    return 0;
+}
+
+/**
+ *  Computes the next value for the data_buffer, at the given cell position.
+ *  Mimics the GPU code for a single thread
+ *  @param 
+ */
 DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffer, long step,
                             int x, int y) {
 
     if (y*2 + step%2 >= WORLD_HEIGHT - 1) { return data_buffer; }
 
     int chunk_size = WORLD_WIDTH;
-
 
     // Get the normalised x,y position for the top left corner
     int nx = 2*x + (step%2);
@@ -69,7 +130,40 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     DataPoint bl = data_buffer[index3];
     DataPoint br = data_buffer[index4];
 
-    direction = ((nx / 32 + ny / 32)) % 2;
+    int tl_density = material_data[tl.material].density;
+    int tr_density = material_data[tr.material].density;
+    int bl_density = material_data[bl.material].density;
+    int br_density = material_data[br.material].density;
+
+    // Calculate the momentum for each cell (sqaured length of velocity * density)
+    // The highest momentum determines which direction this cell should update in.
+    // Should account for the frame distance travelled
+    float momentum_tl = tl_density * tl_density * tl.x_vel * tl.x_vel + tl_density * tl_density * tl.y_vel * tl.y_vel;
+    float momentum_tr = tr_density * tr_density * tr.x_vel * tr.x_vel + tr_density * tr_density * tr.y_vel * tr.y_vel;
+    float momentum_bl = bl_density * bl_density * bl.x_vel * bl.x_vel + bl_density * bl_density * bl.y_vel * bl.y_vel;
+    float momentum_br = br_density * br_density * br.x_vel * br.x_vel + br_density * br_density * br.y_vel * br.y_vel;
+
+    // Get the highest momentum and get the right direction from this.
+    int dominant = largest_of_four(momentum_tl, momentum_tr, momentum_bl, momentum_br);
+    
+    switch (dominant) {
+        case 0: // TL
+            direction = next_direction(&tl);
+            break;
+        case 1: // TR
+            direction = next_direction(&tr);
+            break;
+        case 2: // BL
+            direction = next_direction(&bl);
+            break;
+        case 3: // BR
+            direction = next_direction(&br);
+            break;
+        default:
+            exit(-1);
+    }
+
+    // direction = ((nx / 32 + ny / 32)) % 2;
 
     direction = direction % 4;
 
@@ -86,10 +180,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     br = data_buffer[index4];
 
     // Get the corresponding densities and states
-    int tl_density = material_data[tl.material].density;
-    int tr_density = material_data[tr.material].density;
-    int bl_density = material_data[bl.material].density;
-    int br_density = material_data[br.material].density;
+    tl_density = material_data[tl.material].density;
+    tr_density = material_data[tr.material].density;
+    bl_density = material_data[bl.material].density;
+    br_density = material_data[br.material].density;
 
     int tl_state = material_data[tl.material].state;
     int tr_state = material_data[tr.material].state;
