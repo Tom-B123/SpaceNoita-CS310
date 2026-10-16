@@ -44,7 +44,6 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
             }
         }
     }
-
     int cur_count = 0;
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
@@ -258,6 +257,10 @@ int main(){
 
     int NUM_UPDATES = 3;
 
+    for (int i = 0; i < WORLD_WIDTH; i++) {
+        spawn_material(i, 0, 'R',data_buffer);
+        spawn_material(i,WORLD_WIDTH-1, 'R',data_buffer);
+    }
     for (int i = 0; i < WORLD_HEIGHT; i++) {
         spawn_material(0, i, 'R',data_buffer);
         spawn_material(WORLD_WIDTH-1, i, 'R',data_buffer);
@@ -265,12 +268,12 @@ int main(){
 
     while (!glfwWindowShouldClose(window)) {
         if (step % 3 == 0) {
-            spawn_material(3, 0, 'S', data_buffer);
-            spawn_material(7, 0, 'I', data_buffer);
-            spawn_material(WORLD_WIDTH - 3, 5, 'W', data_buffer);
-            spawn_material(WORLD_WIDTH - 5, 5, 'W', data_buffer);
-            spawn_material(WORLD_WIDTH - 7, 5, 'W', data_buffer);
-            spawn_material(WORLD_WIDTH / 2, WORLD_HEIGHT-5, 's', data_buffer);
+            spawn_material(3, 10, 'S', data_buffer);
+            spawn_material(7, 15, 'I', data_buffer);
+            spawn_material(WORLD_WIDTH - 3, 20, 'W', data_buffer);
+            spawn_material(WORLD_WIDTH - 5, 25, 'W', data_buffer);
+            spawn_material(WORLD_WIDTH - 7, 30, 'W', data_buffer);
+            spawn_material(WORLD_WIDTH / 2, 35, 's', data_buffer);
         }
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
