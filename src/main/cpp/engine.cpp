@@ -27,10 +27,6 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
 
     int chunk_size = WORLD_WIDTH;
 
-    // Which direction is "up"? 0 -> North, 1 -> East etc.
-    int direction = step / 600;
-
-    direction = direction % 4;
 
     // Get the normalised x,y position for the top left corner
     int nx = 2*x + (step%2);
@@ -57,6 +53,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
         2,0,3,1,
     };
 
+    // Which direction is "up"? 0 -> North, 1 -> East etc.
+    // We assume direction is 0, then calculate what it should be for this cell
+    int direction = 0;
+
     int index1 = indicies[orderings[4 * direction + 0]];
     int index2 = indicies[orderings[4 * direction + 1]];
     int index3 = indicies[orderings[4 * direction + 2]];
@@ -68,6 +68,22 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     DataPoint tr = data_buffer[index2];
     DataPoint bl = data_buffer[index3];
     DataPoint br = data_buffer[index4];
+
+    direction = ((nx / 32 + ny / 32)) % 2;
+
+    direction = direction % 4;
+
+    index1 = indicies[orderings[4 * direction + 0]];
+    index2 = indicies[orderings[4 * direction + 1]];
+    index3 = indicies[orderings[4 * direction + 2]];
+    index4 = indicies[orderings[4 * direction + 3]];
+
+    // Get the data from the cell, oriented with the top cells pointing towards [direction] 
+    // and the bottom cells pointing away.
+    tl = data_buffer[index1];
+    tr = data_buffer[index2];
+    bl = data_buffer[index3];
+    br = data_buffer[index4];
 
     // Get the corresponding densities and states
     int tl_density = material_data[tl.material].density;
