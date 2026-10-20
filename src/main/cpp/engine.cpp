@@ -137,14 +137,6 @@ int next_direction(DataPoint* data) {
     return -1;
 }
 
-void move_to_zero(DataPoint* data_point,bool is_x) {
-    if (is_x) {
-        data_point->frame_x_vel ++;
-    }   else {
-        data_point->frame_y_vel ++;
-    }
-}
-
 // The order in which top left, top right, bottom left and bottom right cells
 // are interpretted to "trick" the simulation into giving the right logic.
 // 0,1,2,3 -> 1,3,0,2 rotates the rules to work horizontally.
@@ -305,11 +297,7 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     update_forces(&br);
 
     // // Apply changed forces
-    // data_buffer[index1] = tl;
-    // data_buffer[index2] = tr;
-    // data_buffer[index3] = bl;
-    // data_buffer[index4] = br;
-    for (int i = 0; i < 10; i++) {
+    // for (int i = 0; i < 10; i++) {
         int tl_density = material_data[tl.material].density;
         int tr_density = material_data[tr.material].density;
         int bl_density = material_data[bl.material].density;
@@ -373,7 +361,7 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
         br = data_buffer[index4];
 
         step++;
-    }
+    // }
 
     return data_buffer;
 }

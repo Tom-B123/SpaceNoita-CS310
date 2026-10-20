@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include"materials.h"
 
-void u_sleep(long time);
 #ifdef WIN32
 #include <Windows.h>
 #endif

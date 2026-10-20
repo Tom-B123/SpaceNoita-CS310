@@ -64,6 +64,11 @@ bool key_state[NUM_KEYS];
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    if (key < 0 || key >= NUM_KEYS) {
+        std::cout << "Invalid key error" << std::endl;
+    }
+    // Should handle unknown key (-1)
+    // if (key == GLFW_KEY_UNKNOW) { return; }
     if(action == GLFW_PRESS) 
         key_state[key] = true;
     if(action == GLFW_RELEASE) {
@@ -96,6 +101,7 @@ void input(GLFWwindow* window, float* player_x, float* player_y, float dt) {
 }
 
 int main(){
+    std::cout << "entered!" << std::endl;
     GLFWwindow* window;
     std::string vertexShaderSource;
     std::string fragmentShaderSource;
@@ -133,9 +139,25 @@ int main(){
     }
     glfwMakeContextCurrent(window);
 
-    glewExperimental = GL_TRUE;
+    std::cout << "Readying glew!" << std::endl;
 
-    glewInit();
+    glewExperimental = GL_TRUE;
+    GLenum glewStatus = glewInit();
+    if (glewStatus != GLEW_OK) {
+        std::cerr << "glewInit failed: " << glewGetErrorString(glewStatus) << std::endl;
+        return -1;
+    }
+    // In core profile, glewInit often leaves a spurious GL_INVALID_ENUM from glGetStringi.
+    // Consume it so it doesn't break later error checks.
+    glGetError();
+
+    // Verify the specific functions you're about to call actually loaded:
+    if (!glGenBuffers || !glBindBuffer || !glBufferData) {
+        std::cerr << "Critical GL functions missing — GLEW did not load them." << std::endl;
+        return -1;
+    }
+
+    std::cout << "glewInit() succeeded" << std::endl;
 
     // =========================== Initialise buffers ===============
 
@@ -295,6 +317,7 @@ int main(){
         // windows / linux's sleep function
         u_sleep(30000);
 
+
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
         render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES,player_x,player_y);
 
@@ -325,11 +348,11 @@ int main(){
     // Terminate GLFW
     glfwTerminate();
 
-    free(colours);
-    free(material_data);
+    delete[] colours;
+    delete[] material_data;
 
-    free(render_buffer);
-    free(data_buffer);
+    delete[] render_buffer;
+    delete[] data_buffer;
 
     std::cout << "Exit" << std::endl;
 
