@@ -289,7 +289,7 @@ int main(){
     }
 
     while (!glfwWindowShouldClose(window)) {
-        int parity = (random() & 1) == 0 ? -1 : 1;
+        int parity = 1; //(random() & 1) == 0 ? -1 : 1;
         if (step % 3 == 0) {
             spawn_material(50, 10, 'S',20 * parity,0, data_buffer);
             spawn_material(7, 15, 'I', 10,-15, data_buffer);
@@ -315,7 +315,7 @@ int main(){
         // Sleep n microseconds
         // Use the custom sleep method that picks 
         // windows / linux's sleep function
-        u_sleep(30000);
+        u_sleep(3000);
 
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
