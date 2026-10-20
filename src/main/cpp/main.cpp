@@ -287,7 +287,9 @@ int main(){
         input(window,&player_x,&player_y,1.0f);
 
         // Sleep n microseconds
-        usleep(30000);
+        // Use the custom sleep method that picks 
+        // windows / linux's sleep function
+        // u_sleep(30000);
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
         render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES,player_x,player_y);

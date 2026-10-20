@@ -14,12 +14,15 @@
 #include <stdio.h>
 #include"materials.h"
 
+void u_sleep(long time);
 #ifdef WIN32
 #include <Windows.h>
+#define u_sleep Sleep 
 #endif
 
 #ifdef __linux__
 #include<unistd.h>
+#define u_sleep usleep
 #endif
 #include <string>
 
