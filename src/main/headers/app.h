@@ -17,14 +17,23 @@
 void u_sleep(long time);
 #ifdef WIN32
 #include <Windows.h>
-#define u_sleep Sleep 
 #endif
 
 #ifdef __linux__
 #include<unistd.h>
-#define u_sleep usleep
 #endif
+
+inline void u_sleep(long micros) {
+#ifdef WIN32
+    Sleep(static_cast<DWORD>(micros / 1000));
+#elif defined(__linux__)
+    usleep(static_cast<useconds_t>(micros));
+#endif
+}
+
 #include <string>
+
+
 
 const int WORLD_WIDTH = 540;
 const int WORLD_HEIGHT = 320;
