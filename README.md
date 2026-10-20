@@ -1,7 +1,4 @@
 C++ based game with custom falling sand simulation engine inspired by noita.
 
-1. Navigate to build
-2. run cmake ..
-3. run make
-4. run the created executable
-
+This is the Processing based prototype developed to prove the viability of the systems used in the project.
+Run this with processing.
