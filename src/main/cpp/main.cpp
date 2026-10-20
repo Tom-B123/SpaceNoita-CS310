@@ -255,11 +255,11 @@ int main(){
     // =============== Main Loop ===============================
     unsigned long step = 0;
 
-    int NUM_UPDATES = 3;
+    int NUM_UPDATES = 1;
 
     for (int i = 0; i < WORLD_WIDTH; i++) {
         spawn_material(i, 0, 'R',data_buffer);
-        spawn_material(i,WORLD_WIDTH-1, 'R',data_buffer);
+        spawn_material(i,WORLD_HEIGHT-1, 'R',data_buffer);
     }
     for (int i = 0; i < WORLD_HEIGHT; i++) {
         spawn_material(0, i, 'R',data_buffer);
@@ -267,9 +267,10 @@ int main(){
     }
 
     while (!glfwWindowShouldClose(window)) {
+        int parity = (random() & 1) == 0 ? -1 : 1;
         if (step % 3 == 0) {
-            spawn_material(3, 10, 'S', data_buffer);
-            spawn_material(7, 15, 'I', data_buffer);
+            spawn_material(50, 10, 'S',20 * parity,0, data_buffer);
+            spawn_material(7, 15, 'I', 10,-15, data_buffer);
             spawn_material(WORLD_WIDTH - 3, 20, 'W', data_buffer);
             spawn_material(WORLD_WIDTH - 5, 25, 'W', data_buffer);
             spawn_material(WORLD_WIDTH - 7, 30, 'W', data_buffer);
