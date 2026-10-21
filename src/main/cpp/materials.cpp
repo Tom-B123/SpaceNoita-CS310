@@ -85,6 +85,12 @@ int load_materials(float* colours,Material* material_data) {
         int g = hex2(colour,3);
         int b = hex2(colour,5);
 
+        if (material < 8) {
+            r = 256 - material * 8;
+            g = 256 - material * 8;
+            b = 256 - material * 8;
+        }
+
         if (r < 0 || g < 0 || b < 0) { continue; }
         
         colours[3 * material + 0] = r/256.0;

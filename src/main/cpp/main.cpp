@@ -33,22 +33,15 @@ DataPoint* init_data_buffer(int w, int h) {
     return data_buffer;
 }
 
-char* update_step(char* render_buffer,DataPoint* data_buffer,long step,
+char* update_step(char* render_buffer,DataPoint* data_buffer,char* dirty, long step,
                     int num_updates, float player_x, float player_y) {
 
-    for (int i = 0; i < num_updates; i++) {
-        // Update using margolus neighbourhood.
-        for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
-            for (int x = 0; x < WORLD_WIDTH / 2; x++) {
-                data_buffer = simple_margolus_update(material_data,data_buffer,step + i,x,y);
-            }
-        }
-    }
-    int cur_count = 0;
+    data_buffer = simple_margolus_update(material_data,data_buffer,dirty,step);
+
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
-            if (data_buffer[y*WORLD_WIDTH + x].material == 'S') cur_count++;
             render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
+            // render_buffer[y*WORLD_WIDTH + x] = dirty[y * WORLD_WIDTH + x];
         }
     }
 
@@ -166,9 +159,9 @@ int main(){
     }
     load_materials(colours,material_data);
 
-    for (int material_code = 0; material_code < 256; material_code++) {
-        Material material = material_data[material_code];
-    }
+    // for (int material_code = 0; material_code < 256; material_code++) {
+    //     Material material = material_data[material_code];
+    // }
 
     // Create a VBO to hold our pixel data (for PBO async transfer - optional)
     glGenBuffers(1, &pixel_vbo);
@@ -265,11 +258,14 @@ int main(){
 
     // Create the world as 1 byte per pixel
     char* render_buffer = new char[WORLD_WIDTH * WORLD_HEIGHT];
+    // May need to be every pixel or every cell, cell = more complex as alternating each frame
+    char* dirty = new char[WORLD_WIDTH * WORLD_HEIGHT];
     DataPoint* data_buffer = init_data_buffer(WORLD_WIDTH,WORLD_HEIGHT);
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             render_buffer[y * WORLD_WIDTH + x] = ' ';
+            dirty[y * WORLD_WIDTH + x] = 8;
             data_buffer[y * WORLD_WIDTH + x].material = ' ';
         }
     }
@@ -280,23 +276,23 @@ int main(){
     int NUM_UPDATES = 1;
 
     for (int i = 0; i < WORLD_WIDTH; i++) {
-        spawn_material(i, 0, 'R',data_buffer);
-        spawn_material(i,WORLD_HEIGHT-1, 'R',data_buffer);
+        spawn_material(data_buffer,dirty,i, 0, 'R');
+        spawn_material(data_buffer,dirty,i,WORLD_HEIGHT-1, 'R');
     }
     for (int i = 0; i < WORLD_HEIGHT; i++) {
-        spawn_material(0, i, 'R',data_buffer);
-        spawn_material(WORLD_WIDTH-1, i, 'R',data_buffer);
+        spawn_material(data_buffer,dirty,0, i, 'R');
+        spawn_material(data_buffer,dirty,WORLD_WIDTH-1, i, 'R');
     }
 
     while (!glfwWindowShouldClose(window)) {
         int parity = 1; //(random() & 1) == 0 ? -1 : 1;
         if (step % 3 == 0) {
-            spawn_material(50, 10, 'S',20 * parity,0, data_buffer);
-            spawn_material(7, 15, 'I', 10,-15, data_buffer);
-            spawn_material(WORLD_WIDTH - 3, 20, 'W', data_buffer);
-            spawn_material(WORLD_WIDTH - 5, 25, 'W', data_buffer);
-            spawn_material(WORLD_WIDTH - 7, 30, 'W', data_buffer);
-            spawn_material(WORLD_WIDTH / 2, 35, 's', data_buffer);
+            spawn_material(data_buffer,dirty,50, 10, 'S',0,10);
+            spawn_material(data_buffer,dirty,7, 15, 'I', 10,-15);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 3, 20, 'W');
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 5, 25, 'W');
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 7, 30, 'W');
+            spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, 35, 's');
         }
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
@@ -319,7 +315,7 @@ int main(){
 
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
-        render_buffer = update_step(render_buffer,data_buffer,step,NUM_UPDATES,player_x,player_y);
+        render_buffer = update_step(render_buffer,data_buffer,dirty,step,NUM_UPDATES,player_x,player_y);
 
         step+=NUM_UPDATES;
 
