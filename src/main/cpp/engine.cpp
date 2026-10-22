@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+const int STALE_TIME = 8;
+
 void swap_cells(DataPoint* data_buffer, char* dirty, int indexA, int indexB) {
     DataPoint tmp = data_buffer[indexA];
     data_buffer[indexA] = data_buffer[indexB];
@@ -202,7 +205,9 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
 
     bool swapped = false;
 
-    // Defines the rules for when to swap cells
+    /** Defines the rules for when to swap cells **/
+
+    // Vertical rules, [' ] -> [. ] & [ '] -> [ .] (and [''] -> [..])
     if (tl_density > bl_density) {
         if ((tl_state == POWDER || tl_state == LIQUID || tl_state == GAS) && bl_state != SOLID) {
             swap_cells(data_buffer,dirty,index1,index3);
@@ -215,6 +220,7 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
             swapped = true;
         }
     }
+    // Diagonal rules, [: ] -> [..] & [ :] -> [..] 
     if (!swapped && tl_density > br_density) {
         if ((tl_state == POWDER || tl_state == LIQUID || tl_state == GAS) && br_state != SOLID) {
             swap_cells(data_buffer,dirty,index1,index4);
@@ -227,6 +233,7 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
             swapped = true;
         }
     }
+    // Horizontal rules, [. ] -> [ .] & [:.] -> [.:] (and their mirrors)
     if (!swapped && tl_density > tr_density) {
         if ((tl_state == LIQUID || tl_state == GAS) && tr_state != SOLID) {
             swap_cells(data_buffer,dirty,index1,index2);
@@ -258,10 +265,10 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
         dirty[index3] = 0;
         dirty[index4] = 0;
     }   else {
-        if (dirty[index1] < 8) dirty[index1] ++;
-        if (dirty[index2] < 8) dirty[index2] ++;
-        if (dirty[index3] < 8) dirty[index3] ++;
-        if (dirty[index4] < 8) dirty[index4] ++;
+        if (dirty[index1] < STALE_TIME) dirty[index1] ++;
+        if (dirty[index2] < STALE_TIME) dirty[index2] ++;
+        if (dirty[index3] < STALE_TIME) dirty[index3] ++;
+        if (dirty[index4] < STALE_TIME) dirty[index4] ++;
     }
     return data_buffer;
 }
@@ -285,10 +292,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
             if (ny >= WORLD_HEIGHT - 1) { continue; }
 
             // If there are no dirty cells we can skip
-            if (dirty[ny * (chunk_size) + nx] > 4 &&                                      // [' ]
-                dirty[ny * (chunk_size) + (nx+1) % chunk_size] > 4 &&                     // [ ']
-                dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] > 4 &&                   // [. ]
-                dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) > 4 % chunk_size]     // [ .]
+            if (dirty[ny * (chunk_size) + nx] >= STALE_TIME &&                                      // [' ]
+                dirty[ny * (chunk_size) + (nx+1) % chunk_size] >= STALE_TIME &&                     // [ ']
+                dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] >= STALE_TIME &&                   // [. ]
+                dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] >= STALE_TIME     // [ .]
             ) continue;
 
             int indicies[] = {

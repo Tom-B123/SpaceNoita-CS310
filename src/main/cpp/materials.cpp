@@ -86,9 +86,9 @@ int load_materials(float* colours,Material* material_data) {
         int b = hex2(colour,5);
 
         if (material < 8) {
-            r = 256 - material * 8;
-            g = 256 - material * 8;
-            b = 256 - material * 8;
+            r = 256 - material * 16;
+            g = 256 - material * 16;
+            b = 256 - material * 16;
         }
 
         if (r < 0 || g < 0 || b < 0) { continue; }
