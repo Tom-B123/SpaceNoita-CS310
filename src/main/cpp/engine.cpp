@@ -7,6 +7,7 @@
 
 
 bool* is_stale = new bool[WORLD_WIDTH * WORLD_HEIGHT];
+int MAX_UPDATES2 = MAX_UPDATES * MAX_UPDATES;
 
 void swap_cells(DataPoint* data_buffer, char* dirty, int indexA, int indexB) {
     DataPoint tmp = data_buffer[indexA];
@@ -40,6 +41,14 @@ void spawn_material(DataPoint* data_buffer, char* dirty, int x, int y, char mate
 // Sets the material at a given position, repintacing air
 void spawn_material(DataPoint* data_buffer, char* dirty, int x, int y, char material_id) {
     spawn_material(data_buffer,dirty,x, y,material_id, 0,0);
+}
+
+// Get random float from range
+float rand_range(float start, float end) {
+    // Source - https://stackoverflow.com/a/686373
+    // Posted by John Dibling, modified by community. See post 'Timeline' for change history
+    // Retrieved 2026-10-22, License - CC BY-SA 3.0
+    return start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(end-start)));
 }
 
 // Return the index of the largest of four floats, using 3 conditionals
@@ -95,10 +104,18 @@ int largest_of_four(float A, float B, float C, float D) {
 void update_forces(DataPoint* data) {
     data->frame_x_vel = 0;
     data->frame_y_vel = 0;
-    // apply friction to x_velocity
-    data->x_vel = data->x_vel * 0.8;
-    // apply friction + gravity to y_velocity. Should reach natuaral terminal velocity asp
-    data->y_vel = 1 + data->y_vel * 0.8;
+    
+    // apply gravity
+    data->y_vel += 0.4;
+    // apply friction
+    data->x_vel *= 0.95; 
+    data->y_vel *= 0.95;
+    // clamp speed to MAX_UPDATES / frame
+    float magnitude = data->x_vel * data->x_vel + data->y_vel * data->y_vel;
+    if (magnitude > MAX_UPDATES2) {
+        data->x_vel = data->x_vel * MAX_UPDATES / std::sqrt(magnitude);
+        data->y_vel = data->y_vel * MAX_UPDATES / std::sqrt(magnitude);
+    }
 }
 
 /**
@@ -116,24 +133,46 @@ int next_direction(DataPoint* data) {
     float y_vel = data->y_vel - data->frame_y_vel;
 
     // Move in direction of velocity
-    if (x_vel > 1) {
+    if (x_vel > 0.1) {
         data->frame_x_vel++;
-        if (data->frame_x_vel > data->x_vel) data->frame_x_vel = data->x_vel;
+        // If we have exceeded the velocity, see if we should move anyway by randomly rolling and comparing to the difference in velocity
+        if (data->frame_x_vel > data->x_vel) {
+            data->frame_x_vel = data->x_vel;
+            if (rand_range(0,1) < data->frame_x_vel - data->x_vel) {
+                return -1;
+            }
+        }
         return 3;
     }
-    if (x_vel < -1) {
+    if (x_vel < -0.1) {
         data->frame_x_vel--;
-        if (data->frame_x_vel < data->x_vel) data->frame_x_vel = data->x_vel;
+        if (data->frame_x_vel < data->x_vel) {
+            data->frame_x_vel = data->x_vel;
+            if (rand_range(0,1) < -data->frame_x_vel + data->x_vel) {
+                return -1;
+            }
+        }
         return 1;
     }
-    if (y_vel > -1) {
+    if (y_vel > 0.1) {
         data->frame_y_vel++;
-        if (data->frame_y_vel > data->y_vel) data->frame_y_vel = data->y_vel;
+        if (data->frame_y_vel > data->y_vel) {
+            data->frame_y_vel = data->y_vel;
+            if (rand_range(0,1) < data->frame_y_vel - data->y_vel) {
+                return -1;
+            }
+        }
         return 0;
     }
-    if (y_vel < 1) {
+    if (y_vel < -0.1) {
         data->frame_y_vel--;
-        if (data->frame_y_vel < data->y_vel) data->frame_y_vel = data->y_vel;
+        data->frame_y_vel++;
+        if (data->frame_y_vel < data->y_vel) {
+            data->frame_y_vel = data->y_vel;
+            if (rand_range(0,1) < -data->frame_y_vel + data->y_vel) {
+                return -1;
+            }
+        }
         return 2;
     }
 
@@ -291,7 +330,6 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     }
 
     bool resolved_velocity = false;
-    int MAX_UPDATES = 32;
     int i = 0;
     // Update i times.
     while (!resolved_velocity && i < MAX_UPDATES) {

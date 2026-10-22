@@ -38,14 +38,17 @@ inline void u_sleep(long micros) {
  * until nearby pixels are swapped.
  * 3 seems sufficient
  */
-const int STALE_TIME = 8;
+const int STALE_TIME = 5;
 /**
  * The width in pixels of the game world
  */
-const int WORLD_WIDTH = 512;
+const int WORLD_WIDTH = 640;
 /**
  * The height in pixels of the game world
  */
-const int WORLD_HEIGHT = 512;
-
+const int WORLD_HEIGHT = 640;
+/**
+ *  The maximum number of updates in a single tick
+ */
+const int MAX_UPDATES = 32;
 #endif

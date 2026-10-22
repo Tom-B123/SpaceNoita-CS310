@@ -278,6 +278,12 @@ int main(){
 
     int NUM_UPDATES = 1;
 
+    // Source - https://stackoverflow.com/a/686373␍
+    // Posted by John Dibling, modified by community. See post 'Timeline' for change history␍
+    // Retrieved 2026-10-22, License - CC BY-SA 3.0
+    //
+    srand (static_cast <unsigned> (time(0)));
+
     for (int i = 0; i < WORLD_WIDTH; i++) {
         spawn_material(data_buffer,dirty,i, 0, 'R');
         spawn_material(data_buffer,dirty,i,WORLD_HEIGHT-1, 'R');
@@ -290,13 +296,13 @@ int main(){
     while (!glfwWindowShouldClose(window)) {
         int parity = (rand() & 1) == 0 ? -1 : 1;
         // if (step % 3 == 0) {
-            spawn_material(data_buffer,dirty,110, 110, 'S',20,-40);
-            spawn_material(data_buffer,dirty,10, 50, 'I', 30,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 10, 20, 'S',-50,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 25, 'W',-30,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 26, 'W',-30,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 27, 'W',-30,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 28, 'W',-30,0);
+            spawn_material(data_buffer,dirty,110, 210, 'W',10,-5);
+            spawn_material(data_buffer,dirty,10, 50, 'I', 5,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 10, 20, 'S',-15,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 25, 'W',-10,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 26, 'W',-2,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 27, 'W',-2,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 28, 'W',-2,0);
             spawn_material(data_buffer,dirty,WORLD_WIDTH - 30, 30, 'S',-10,0);
             spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 's');
         // }
