@@ -282,10 +282,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
             int nx = 2*x + (step%2);
             int ny = 2*y + (step%2);
 
-            if (ny >= WORLD_HEIGHT - 1) { return data_buffer; }
+            if (ny >= WORLD_HEIGHT - 1) { continue; }
 
             // If there are no dirty cells we can skip
-            if (dirty[ny * (chunk_size) + nx] > 8 &&                                      // [' ]
+            if (dirty[ny * (chunk_size) + nx] > 4 &&                                      // [' ]
                 dirty[ny * (chunk_size) + (nx+1) % chunk_size] > 4 &&                     // [ ']
                 dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] > 4 &&                   // [. ]
                 dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) > 4 % chunk_size]     // [ .]
@@ -363,7 +363,7 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                     // if (x==0 && y==0) { std::cout << br.y_vel << "\n"; }
                     break;
                 default:
-                    return data_buffer;
+                    continue;
             }
 
             // tl, tr, bl or br have been updated by calling next_direction (potentially all 4) so this needs to be written BACK to 

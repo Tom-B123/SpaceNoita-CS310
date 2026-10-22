@@ -7,14 +7,13 @@
 #include "app.h"
 
 #include <cstdlib>
-// Add this before including RapidJSON
 
 #include <fstream>
 #include <iostream>
 
 #include"util.h"
 #include"engine.h"
-int sand_count;
+bool debug_display = false;
 
 Material* material_data = new Material[256];
 float* colours = new float[256 * 3];
@@ -40,8 +39,8 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,char* dirty, long s
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
-            render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
-            // render_buffer[y*WORLD_WIDTH + x] = dirty[y * WORLD_WIDTH + x];
+            if (!debug_display) render_buffer[y*WORLD_WIDTH + x] = data_buffer[y * WORLD_WIDTH + x].material;
+            if (debug_display)  render_buffer[y*WORLD_WIDTH + x] = dirty[y * WORLD_WIDTH + x];
         }
     }
 
@@ -62,8 +61,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
     // Should handle unknown key (-1)
     // if (key == GLFW_KEY_UNKNOW) { return; }
-    if(action == GLFW_PRESS) 
+    if(action == GLFW_PRESS) {
         key_state[key] = true;
+        if (key == GLFW_KEY_SPACE) debug_display = !debug_display;
+    }
+
     if(action == GLFW_RELEASE) {
         key_state[key] = false;
     }
@@ -311,7 +313,7 @@ int main(){
         // Sleep n microseconds
         // Use the custom sleep method that picks 
         // windows / linux's sleep function
-        u_sleep(3000);
+        u_sleep(1000);
 
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.

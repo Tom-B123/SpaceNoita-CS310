@@ -31,7 +31,7 @@
     },
     " ":{
         "name":"Air",
-        "colour":"#003377",
+        "colour":"#009977",
         "density":2,
         "state":"gas"
     },

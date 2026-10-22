@@ -34,8 +34,8 @@ inline void u_sleep(long micros) {
 
 
 
-const int WORLD_WIDTH = 540;
-const int WORLD_HEIGHT = 320;
+const int WORLD_WIDTH = 512;
+const int WORLD_HEIGHT = 512;
 const double PIXEL_SCALE = 1;
 const int CELL_WIDTH = 2;
 const int CELL_HEIGHT = 2;
