@@ -42,11 +42,11 @@ const int STALE_TIME = 5;
 /**
  * The width in pixels of the game world
  */
-const int WORLD_WIDTH = 640;
+const int WORLD_WIDTH = 512;
 /**
  * The height in pixels of the game world
  */
-const int WORLD_HEIGHT = 640;
+const int WORLD_HEIGHT = 512;
 /**
  *  The maximum number of updates in a single tick
  */

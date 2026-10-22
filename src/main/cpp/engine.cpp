@@ -107,15 +107,15 @@ void update_forces(DataPoint* data) {
     
     // apply gravity
     data->y_vel += 0.4;
-    // apply friction
-    data->x_vel *= 0.95; 
-    data->y_vel *= 0.95;
     // clamp speed to MAX_UPDATES / frame
     float magnitude = data->x_vel * data->x_vel + data->y_vel * data->y_vel;
     if (magnitude > MAX_UPDATES2) {
         data->x_vel = data->x_vel * MAX_UPDATES / std::sqrt(magnitude);
         data->y_vel = data->y_vel * MAX_UPDATES / std::sqrt(magnitude);
     }
+    // apply friction
+    data->x_vel *= 0.95; 
+    data->y_vel *= 0.95;
 }
 
 /**
@@ -138,9 +138,9 @@ int next_direction(DataPoint* data) {
         // If we have exceeded the velocity, see if we should move anyway by randomly rolling and comparing to the difference in velocity
         if (data->frame_x_vel > data->x_vel) {
             data->frame_x_vel = data->x_vel;
-            if (rand_range(0,1) < data->frame_x_vel - data->x_vel) {
-                return -1;
-            }
+            // if (rand_range(0,1) < data->frame_x_vel - data->x_vel) {
+            //     return -1;
+            // }
         }
         return 3;
     }
@@ -148,9 +148,9 @@ int next_direction(DataPoint* data) {
         data->frame_x_vel--;
         if (data->frame_x_vel < data->x_vel) {
             data->frame_x_vel = data->x_vel;
-            if (rand_range(0,1) < -data->frame_x_vel + data->x_vel) {
-                return -1;
-            }
+            // if (rand_range(0,1) < -data->frame_x_vel + data->x_vel) {
+            //     return -1;
+            // }
         }
         return 1;
     }
@@ -158,9 +158,9 @@ int next_direction(DataPoint* data) {
         data->frame_y_vel++;
         if (data->frame_y_vel > data->y_vel) {
             data->frame_y_vel = data->y_vel;
-            if (rand_range(0,1) < data->frame_y_vel - data->y_vel) {
-                return -1;
-            }
+            // if (rand_range(0,1) < data->frame_y_vel - data->y_vel) {
+            //     return -1;
+            // }
         }
         return 0;
     }
@@ -169,9 +169,9 @@ int next_direction(DataPoint* data) {
         data->frame_y_vel++;
         if (data->frame_y_vel < data->y_vel) {
             data->frame_y_vel = data->y_vel;
-            if (rand_range(0,1) < -data->frame_y_vel + data->y_vel) {
-                return -1;
-            }
+            // if (rand_range(0,1) < -data->frame_y_vel + data->y_vel) {
+            //     return -1;
+            // }
         }
         return 2;
     }
