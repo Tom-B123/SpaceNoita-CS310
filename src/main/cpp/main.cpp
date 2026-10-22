@@ -8,6 +8,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include "app.h"
 
+#include "box2d/box2d.h"
+
 #include <cstdlib>
 
 #include <fstream>
@@ -298,6 +300,8 @@ int main(){
             std::chrono::duration<double>(1.0 / TARGET_FPS)
         );
     std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
+    
+    b2WorldDef worldDef = b2DefaultWorldDef();
 
     while (!glfwWindowShouldClose(window)) {
         frame_start = std::chrono::steady_clock::now();

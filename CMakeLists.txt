@@ -14,7 +14,17 @@ find_package(OpenGL REQUIRED)
 # Find the sourcecode for the program
 file(GLOB_RECURSE SOURCES "src/main/cpp/*.cpp")
 
+include(FetchContent)
+FetchContent_Declare(
+    box2d
+    GIT_REPOSITORY https://github.com/erincatto/box2d.git
+    GIT_TAG v3.2.0  # Or another v3.x version
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(box2d)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
+target_link_libraries(FallingSandIter1 PRIVATE box2d::box2d)
 
 # Tell the compiler that we are using static GLEW
 if(WIN32)
