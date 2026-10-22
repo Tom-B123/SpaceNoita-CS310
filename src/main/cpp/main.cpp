@@ -267,7 +267,8 @@ int main(){
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             render_buffer[y * WORLD_WIDTH + x] = ' ';
-            dirty[y * WORLD_WIDTH + x] = 31;
+            // Defaults to displaying air, aka 32 ticks of dirty time.
+            dirty[y * WORLD_WIDTH + x] = ' ';
             data_buffer[y * WORLD_WIDTH + x].material = ' ';
         }
     }
@@ -289,12 +290,12 @@ int main(){
     while (!glfwWindowShouldClose(window)) {
         int parity = 1; //(random() & 1) == 0 ? -1 : 1;
         if (step % 3 == 0) {
-            spawn_material(data_buffer,dirty,50, 10, 'S',0,10);
-            spawn_material(data_buffer,dirty,7, 15, 'I', 10,-15);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 3, 20, 'W');
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 5, 25, 'W');
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 7, 30, 'W');
-            spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, 35, 's');
+            spawn_material(data_buffer,dirty,110, 20, 'S',-10,10);
+            spawn_material(data_buffer,dirty,10, 20, 'I', 10,-15);
+            // spawn_material(data_buffer,dirty,WORLD_WIDTH - 3, 20, 'W');
+            // spawn_material(data_buffer,dirty,WORLD_WIDTH - 5, 25, 'W');
+            // spawn_material(data_buffer,dirty,WORLD_WIDTH - 7, 30, 'W');
+            // spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, 35, 's');
         }
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
@@ -313,7 +314,7 @@ int main(){
         // Sleep n microseconds
         // Use the custom sleep method that picks 
         // windows / linux's sleep function
-        u_sleep(1000);
+        u_sleep(50000);
 
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.

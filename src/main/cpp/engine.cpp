@@ -5,7 +5,9 @@
 #include <cmath>
 #include <vector>
 
-const int STALE_TIME = 31;
+
+float stale_time = fmin(STALE_TIME,32);
+bool* is_stale = new bool[WORLD_WIDTH * WORLD_HEIGHT];
 
 void swap_cells(DataPoint* data_buffer, char* dirty, int indexA, int indexB) {
     DataPoint tmp = data_buffer[indexA];
@@ -259,19 +261,21 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
         }
     }
 
+    // See if this works for multiple steps / frame
     if (swapped) {
         dirty[index1] = 0;
         dirty[index2] = 0;
         dirty[index3] = 0;
         dirty[index4] = 0;
     }   else {
-        if (dirty[index1] < STALE_TIME) dirty[index1] ++;
-        if (dirty[index2] < STALE_TIME) dirty[index2] ++;
-        if (dirty[index3] < STALE_TIME) dirty[index3] ++;
-        if (dirty[index4] < STALE_TIME) dirty[index4] ++;
+        is_stale[index1] = true;
+        is_stale[index2] = true;
+        is_stale[index3] = true;
+        is_stale[index4] = true;
     }
     return data_buffer;
 }
+
 
 /**
  *  Computes the next value for the data_buffer, at the given cell position.
@@ -280,112 +284,125 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
  */
 DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffer, char* dirty, long step) {
 
-    for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
-        for (int x = 0; x < WORLD_WIDTH / 2; x++) {
+    // Update the forces for all pixels. If the pixel is stale, don't bother
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        for (int x = 0; x < WORLD_WIDTH; x++) {
 
-            int chunk_size = WORLD_WIDTH;
+            if (is_stale[y * WORLD_WIDTH + x] && dirty[y * WORLD_WIDTH + x] < stale_time) dirty[y * WORLD_WIDTH + x] ++;
+            if (dirty[y * (WORLD_WIDTH) + x] >= STALE_TIME) continue;
+            update_forces(&data_buffer[y * WORLD_WIDTH + x]);
+        }
+    }
 
-            // Get the normalised x,y position for the top left corner
-            int nx = 2*x + (step%2);
-            int ny = 2*y + (step%2);
+    // Update i times.
+    for (int i = 0; i < 10; i++) {
+        for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
+            for (int x = 0; x < WORLD_WIDTH / 2; x++) {
 
-            if (ny >= WORLD_HEIGHT - 1) { continue; }
+                int chunk_size = WORLD_WIDTH;
 
-            // If there are no dirty cells we can skip
-            if (dirty[ny * (chunk_size) + nx] >= STALE_TIME &&                                      // [' ]
-                dirty[ny * (chunk_size) + (nx+1) % chunk_size] >= STALE_TIME &&                     // [ ']
-                dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] >= STALE_TIME &&                   // [. ]
-                dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] >= STALE_TIME     // [ .]
-            ) continue;
+                // Get the normalised x,y position for the top left corner
+                int nx = 2*x + (step%2);
+                int ny = 2*y + (step%2);
 
-            int indicies[] = {
-                ny * (chunk_size) + nx,                                      // [' ]
-                ny * (chunk_size) + (nx+1) % chunk_size,                     // [ ']
-                (((ny+1)%chunk_size) * (chunk_size)) + nx,                   // [. ]
-                (((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size   // [ .]
-            };
+                if (ny >= WORLD_HEIGHT - 1) { continue; }
+
+                // If there are no dirty cells we can skip
+                if (dirty[ny * (chunk_size) + nx] >= STALE_TIME &&                                      // [' ]
+                        dirty[ny * (chunk_size) + (nx+1) % chunk_size] >= STALE_TIME &&                     // [ ']
+                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] >= STALE_TIME &&                   // [. ]
+                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] >= STALE_TIME     // [ .]
+                ) continue;
+
+                int indicies[] = {
+                    ny * (chunk_size) + nx,                                      // [' ]
+                    ny * (chunk_size) + (nx+1) % chunk_size,                     // [ ']
+                    (((ny+1)%chunk_size) * (chunk_size)) + nx,                   // [. ]
+                    (((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size   // [ .]
+                };
 
 
-            // Which direction is "up"? 0 -> North, 1 -> East etc.
-            // We assume direction is 0, then calculate what it should be for this cell
-            int direction = 0;
+                // Which direction is "up"? 0 -> North, 1 -> East etc.
+                // We assume direction is 0, then calculate what it should be for this cell
+                int direction = 0;
 
-            int index1 = indicies[orderings[4 * direction + 0]];
-            int index2 = indicies[orderings[4 * direction + 1]];
-            int index3 = indicies[orderings[4 * direction + 2]];
-            int index4 = indicies[orderings[4 * direction + 3]];
+                int index1 = indicies[orderings[4 * direction + 0]];
+                int index2 = indicies[orderings[4 * direction + 1]];
+                int index3 = indicies[orderings[4 * direction + 2]];
+                int index4 = indicies[orderings[4 * direction + 3]];
 
-            // Get the data from the cell, oriented with the top cells pointing towards [direction] 
-            // and the bottom cells pointing away.
-            DataPoint tl = data_buffer[index1];
-            DataPoint tr = data_buffer[index2];
-            DataPoint bl = data_buffer[index3];
-            DataPoint br = data_buffer[index4];
+                // Get the data from the cell, oriented with the top cells pointing towards [direction] 
+                // and the bottom cells pointing away.
+                DataPoint tl = data_buffer[index1];
+                DataPoint tr = data_buffer[index2];
+                DataPoint bl = data_buffer[index3];
+                DataPoint br = data_buffer[index4];
 
-            // Call this once per update
-            update_forces(&tl);
-            update_forces(&tr);
-            update_forces(&bl);
-            update_forces(&br);
+                // Call this once per update
+                update_forces(&tl);
+                update_forces(&tr);
+                update_forces(&bl);
+                update_forces(&br);
 
-            // Apply changed forces
-            int tl_density = material_data[tl.material].density;
-            int tr_density = material_data[tr.material].density;
-            int bl_density = material_data[bl.material].density;
-            int br_density = material_data[br.material].density;
+                // Apply changed forces
+                int tl_density = material_data[tl.material].density;
+                int tr_density = material_data[tr.material].density;
+                int bl_density = material_data[bl.material].density;
+                int br_density = material_data[br.material].density;
 
-            // Calculate the momentum for each cell (sqaured length of velocity * density)
-            // The highest momentum determines which direction this cell should update in.
-            // Should account for the frame distance travelled
-            float momentum_tl = tl_density * tl_density * (tl.x_vel - tl.frame_x_vel) * (tl.x_vel - tl.frame_x_vel)
-                + tl_density * tl_density * (tl.y_vel - tl.frame_y_vel) * (tl.y_vel-tl.frame_y_vel);
-            float momentum_tr = tr_density * tr_density * (tr.x_vel - tr.frame_x_vel) * (tr.x_vel - tr.frame_x_vel)
-                + tr_density * tr_density * (tr.y_vel - tr.frame_y_vel) * (tr.y_vel-tr.frame_y_vel);
-            float momentum_bl = bl_density * bl_density * (bl.x_vel - bl.frame_x_vel) * (bl.x_vel - bl.frame_x_vel)
-                + bl_density * bl_density * (bl.y_vel - bl.frame_y_vel) * (bl.y_vel-bl.frame_y_vel);
-            float momentum_br = br_density * br_density * (br.x_vel - br.frame_x_vel) * (br.x_vel - br.frame_x_vel)
-                + br_density * br_density * (br.y_vel - br.frame_y_vel) * (br.y_vel-br.frame_y_vel);
+                // Calculate the momentum for each cell (sqaured length of velocity * density)
+                // The highest momentum determines which direction this cell should update in.
+                // Should account for the frame distance travelled
+                float momentum_tl = tl_density * tl_density * (tl.x_vel - tl.frame_x_vel) * (tl.x_vel - tl.frame_x_vel)
+                    + tl_density * tl_density * (tl.y_vel - tl.frame_y_vel) * (tl.y_vel-tl.frame_y_vel);
+                float momentum_tr = tr_density * tr_density * (tr.x_vel - tr.frame_x_vel) * (tr.x_vel - tr.frame_x_vel)
+                    + tr_density * tr_density * (tr.y_vel - tr.frame_y_vel) * (tr.y_vel-tr.frame_y_vel);
+                float momentum_bl = bl_density * bl_density * (bl.x_vel - bl.frame_x_vel) * (bl.x_vel - bl.frame_x_vel)
+                    + bl_density * bl_density * (bl.y_vel - bl.frame_y_vel) * (bl.y_vel-bl.frame_y_vel);
+                float momentum_br = br_density * br_density * (br.x_vel - br.frame_x_vel) * (br.x_vel - br.frame_x_vel)
+                    + br_density * br_density * (br.y_vel - br.frame_y_vel) * (br.y_vel-br.frame_y_vel);
 
-            // Move cells many times per update, moving as the dominant is moving for this update. Don't know initially how many times a given grid will need to update
+                // Move cells many times per update, moving as the dominant is moving for this update. Don't know initially how many times a given grid will need to update
 
-            // Get the highest momentum and get the right direction from this.
-            int dominant = largest_of_four(momentum_tl, momentum_tr, momentum_bl, momentum_br);
+                // Get the highest momentum and get the right direction from this.
+                int dominant = largest_of_four(momentum_tl, momentum_tr, momentum_bl, momentum_br);
 
-            // Pick a direction based on which if the 4 cells has the most "momentum" (velocity * mass)
-            switch (dominant) {
-                case 0: // TL
-                    direction = next_direction(&tl);
-                    break;
-                case 1: // TR
-                    direction = next_direction(&tr);
-                    break;
-                case 2: // BL
-                    direction = next_direction(&bl);
-                    break;
-                case 3: // BR
-                    direction = next_direction(&br);
-                    break;
-                // If we have 0 velocity, we don't need to update
-                default:
-                    continue;
+                // Pick a direction based on which if the 4 cells has the most "momentum" (velocity * mass)
+                switch (dominant) {
+                    case 0: // TL
+                        direction = next_direction(&tl);
+                        break;
+                    case 1: // TR
+                        direction = next_direction(&tr);
+                        break;
+                    case 2: // BL
+                        direction = next_direction(&bl);
+                        break;
+                    case 3: // BR
+                        direction = next_direction(&br);
+                        break;
+                        // If we have 0 velocity, we don't need to update
+                    default:
+                        continue;
+                }
+
+                // tl, tr, bl or br have been updated by calling next_direction (potentially all 4) so this needs to be written BACK to 
+                // the data_buffer
+                data_buffer[index1] = tl;
+                data_buffer[index2] = tr;
+                data_buffer[index3] = bl;
+                data_buffer[index4] = br;
+
+                nx = 2*x + ((step+i)%2);
+                ny = 2*y + ((step+i)%2);
+
+                data_buffer = update(material_data, data_buffer, dirty, direction,nx,ny,chunk_size);
+
+                tl = data_buffer[index1];
+                tr = data_buffer[index2];
+                bl = data_buffer[index3];
+                br = data_buffer[index4];
             }
-
-            // tl, tr, bl or br have been updated by calling next_direction (potentially all 4) so this needs to be written BACK to 
-            // the data_buffer
-            data_buffer[index1] = tl;
-            data_buffer[index2] = tr;
-            data_buffer[index3] = bl;
-            data_buffer[index4] = br;
-
-            nx = 2*x + (step%2);
-            ny = 2*y + (step%2);
-
-            data_buffer = update(material_data, data_buffer, dirty, direction,nx,ny,chunk_size);
-
-            tl = data_buffer[index1];
-            tr = data_buffer[index2];
-            bl = data_buffer[index3];
-            br = data_buffer[index4];
         }
     }
 

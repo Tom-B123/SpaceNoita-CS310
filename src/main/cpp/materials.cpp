@@ -6,6 +6,7 @@
 #include "rapidjson/filereadstream.h"
 
 #include <iostream>
+#include <math.h>
 int load_materials(float* colours,Material* material_data) {
     // Read the entire file into a string
     std::string materials_location = find_shader_file("../cpp/materials.json");
@@ -85,14 +86,16 @@ int load_materials(float* colours,Material* material_data) {
         int g = hex2(colour,3);
         int b = hex2(colour,5);
 
+        float stale_time = fmin(STALE_TIME,32);
         // 1st 32 materials = debugging colours, since " " is the 1st reasonable cell name.
-        if (material < 32) {
-            r = 256 - material * 8;
-            g = material * 8;
+        if (material < STALE_TIME) {
+            r = 256 - material * (256.0f / STALE_TIME);
+            g = material * (256.0f / STALE_TIME);
             b = 50;
         }
-
-        if (r < 0 || g < 0 || b < 0) { continue; }
+        if (r > 256 || r < 0) r = 0;
+        if (g > 256 || g < 0) g = 0;
+        if (b > 256 || b < 0) b = 0;
         
         colours[3 * material + 0] = r/256.0;
         colours[3 * material + 1] = g/256.0;
