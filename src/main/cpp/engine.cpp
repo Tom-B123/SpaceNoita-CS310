@@ -6,7 +6,6 @@
 #include <vector>
 
 
-float stale_time = fmin(STALE_TIME,32);
 bool* is_stale = new bool[WORLD_WIDTH * WORLD_HEIGHT];
 
 void swap_cells(DataPoint* data_buffer, char* dirty, int indexA, int indexB) {
@@ -40,19 +39,16 @@ void spawn_material(DataPoint* data_buffer, char* dirty, int x, int y, char mate
 }
 // Sets the material at a given position, repintacing air
 void spawn_material(DataPoint* data_buffer, char* dirty, int x, int y, char material_id) {
-    spawn_material(data_buffer,dirty,x, y,material_id, 0,-1);
+    spawn_material(data_buffer,dirty,x, y,material_id, 0,0);
 }
 
 // Return the index of the largest of four floats, using 3 conditionals
 int largest_of_four(float A, float B, float C, float D) {
     // If the total momentum is beneath a threshold, we stop moving.
-    if (A + B + C + D < 2) {
-        return -1;
-    }
     // Else return the cell with the biggest momentum
-    if (A > B) {
-        if (A > C) {
-            if (A > D) {
+    if (A >= B) {
+        if (A >= C) {
+            if (A >= D) {
                 // A is largest
                 return 0;
             }   else {
@@ -60,7 +56,7 @@ int largest_of_four(float A, float B, float C, float D) {
                 return 3;
             }
         }   else {
-            if (C > D) {
+            if (C >= D) {
                 // C is largest
                 return 2;
             }   else {
@@ -70,8 +66,8 @@ int largest_of_four(float A, float B, float C, float D) {
         }
         // B > A case
     }   else {
-        if (B > C) {
-            if (B > D) {
+        if (B >= C) {
+            if (B >= D) {
                 // A is largest
                 return 1;
             }   else {
@@ -79,7 +75,7 @@ int largest_of_four(float A, float B, float C, float D) {
                 return 3;
             }
         }   else {
-            if (C > D) {
+            if (C >= D) {
                 // C is largest
                 return 2;
             }   else {
@@ -102,7 +98,7 @@ void update_forces(DataPoint* data) {
     // apply friction to x_velocity
     data->x_vel = data->x_vel * 0.9;
     // apply friction + gravity to y_velocity. Should reach natuaral terminal velocity asp
-    data->y_vel = 1 + data->y_vel * 0.9;
+    data->y_vel = 0.2 + data->y_vel * 0.9;
 }
 
 /**
@@ -288,24 +284,26 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
 
-            if (is_stale[y * WORLD_WIDTH + x] && dirty[y * WORLD_WIDTH + x] < stale_time) dirty[y * WORLD_WIDTH + x] ++;
+            if (is_stale[y * WORLD_WIDTH + x] && dirty[y * WORLD_WIDTH + x] < STALE_TIME) dirty[y * WORLD_WIDTH + x] ++;
             if (dirty[y * (WORLD_WIDTH) + x] >= STALE_TIME) continue;
             update_forces(&data_buffer[y * WORLD_WIDTH + x]);
         }
     }
 
+    bool resolved_velocity = false;
+    int MAX_UPDATES = 32;
+    int i = 0;
     // Update i times.
-    for (int i = 0; i < 10; i++) {
+    while (!resolved_velocity && i < MAX_UPDATES) {
+        resolved_velocity = true;
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
 
                 int chunk_size = WORLD_WIDTH;
 
                 // Get the normalised x,y position for the top left corner
-                int nx = 2*x + (step%2);
-                int ny = 2*y + (step%2);
-
-                if (ny >= WORLD_HEIGHT - 1) { continue; }
+                int nx = 2*x + ((step+i)%2);
+                int ny = 2*y + ((step+i)%2);
 
                 // If there are no dirty cells we can skip
                 if (dirty[ny * (chunk_size) + nx] >= STALE_TIME &&                                      // [' ]
@@ -326,10 +324,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                 // We assume direction is 0, then calculate what it should be for this cell
                 int direction = 0;
 
-                int index1 = indicies[orderings[4 * direction + 0]];
-                int index2 = indicies[orderings[4 * direction + 1]];
-                int index3 = indicies[orderings[4 * direction + 2]];
-                int index4 = indicies[orderings[4 * direction + 3]];
+                int index1 = ny * (chunk_size) + nx;
+                int index2 = ny * (chunk_size) + (nx+1)%chunk_size;
+                int index3 = ((ny+1)%chunk_size) * (chunk_size) + nx;
+                int index4 = ((ny+1)%chunk_size) * (chunk_size) + (nx+1) % chunk_size;
 
                 // Get the data from the cell, oriented with the top cells pointing towards [direction] 
                 // and the bottom cells pointing away.
@@ -338,34 +336,40 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                 DataPoint bl = data_buffer[index3];
                 DataPoint br = data_buffer[index4];
 
-                // Call this once per update
-                update_forces(&tl);
-                update_forces(&tr);
-                update_forces(&bl);
-                update_forces(&br);
-
                 // Apply changed forces
                 int tl_density = material_data[tl.material].density;
                 int tr_density = material_data[tr.material].density;
                 int bl_density = material_data[bl.material].density;
                 int br_density = material_data[br.material].density;
-
+                
                 // Calculate the momentum for each cell (sqaured length of velocity * density)
                 // The highest momentum determines which direction this cell should update in.
                 // Should account for the frame distance travelled
-                float momentum_tl = tl_density * tl_density * (tl.x_vel - tl.frame_x_vel) * (tl.x_vel - tl.frame_x_vel)
-                    + tl_density * tl_density * (tl.y_vel - tl.frame_y_vel) * (tl.y_vel-tl.frame_y_vel);
-                float momentum_tr = tr_density * tr_density * (tr.x_vel - tr.frame_x_vel) * (tr.x_vel - tr.frame_x_vel)
-                    + tr_density * tr_density * (tr.y_vel - tr.frame_y_vel) * (tr.y_vel-tr.frame_y_vel);
-                float momentum_bl = bl_density * bl_density * (bl.x_vel - bl.frame_x_vel) * (bl.x_vel - bl.frame_x_vel)
-                    + bl_density * bl_density * (bl.y_vel - bl.frame_y_vel) * (bl.y_vel-bl.frame_y_vel);
-                float momentum_br = br_density * br_density * (br.x_vel - br.frame_x_vel) * (br.x_vel - br.frame_x_vel)
-                    + br_density * br_density * (br.y_vel - br.frame_y_vel) * (br.y_vel-br.frame_y_vel);
-
+                float momentum_tl =  (tl.x_vel - tl.frame_x_vel) * (tl.x_vel - tl.frame_x_vel)
+                    +   (tl.y_vel - tl.frame_y_vel) * (tl.y_vel-tl.frame_y_vel);
+                float momentum_tr =   (tr.x_vel - tr.frame_x_vel) * (tr.x_vel - tr.frame_x_vel)
+                    +   (tr.y_vel - tr.frame_y_vel) * (tr.y_vel-tr.frame_y_vel);
+                float momentum_bl =   (bl.x_vel - bl.frame_x_vel) * (bl.x_vel - bl.frame_x_vel)
+                    +   (bl.y_vel - bl.frame_y_vel) * (bl.y_vel-bl.frame_y_vel);
+                float momentum_br =   (br.x_vel - br.frame_x_vel) * (br.x_vel - br.frame_x_vel)
+                    +  (br.y_vel - br.frame_y_vel) * (br.y_vel-br.frame_y_vel);
                 // Move cells many times per update, moving as the dominant is moving for this update. Don't know initially how many times a given grid will need to update
 
                 // Get the highest momentum and get the right direction from this.
                 int dominant = largest_of_four(momentum_tl, momentum_tr, momentum_bl, momentum_br);
+                float grid_momentum = -1;
+                switch (dominant) {
+                    case 0: grid_momentum = momentum_tl; break;
+                    case 1: grid_momentum = momentum_tr; break;
+                    case 2: grid_momentum = momentum_bl; break;
+                    case 3: grid_momentum = momentum_br; break;
+                }
+                if (grid_momentum < 1) continue; 
+
+                // std::cout << "Frame 1: |" << tl.x_vel << ":" << tl.frame_x_vel << "," << tl.y_vel << ":" << tl.frame_y_vel << " , " << tr.x_vel <<":" << tr.frame_x_vel << "," << tr.y_vel << ":" << tr.frame_y_vel << "|" << std::endl
+                //           << "Frame 1: |" << bl.x_vel << ":" << bl.frame_x_vel << "," << bl.y_vel << ":" << bl.frame_y_vel << " , " << br.x_vel <<":" << br.frame_x_vel << "," << tr.y_vel << ":" << tr.frame_y_vel << "|" << std::endl;
+                
+                resolved_velocity = false;
 
                 // Pick a direction based on which if the 4 cells has the most "momentum" (velocity * mass)
                 switch (dominant) {
@@ -386,6 +390,10 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                         continue;
                 }
 
+
+                // std::cout << "Frame 2: |" << tl.x_vel << ":" << tl.frame_x_vel << "," << tl.y_vel << ":" << tl.frame_y_vel << " , " << tr.x_vel <<":" << tr.frame_x_vel << "," << tr.y_vel << ":" << tr.frame_y_vel << "|" << std::endl
+                //           << "Frame 2: |" << bl.x_vel << ":" << bl.frame_x_vel << "," << bl.y_vel << ":" << bl.frame_y_vel << " , " << br.x_vel <<":" << br.frame_x_vel << "," << tr.y_vel << ":" << tr.frame_y_vel << "|" << std::endl;
+
                 // tl, tr, bl or br have been updated by calling next_direction (potentially all 4) so this needs to be written BACK to 
                 // the data_buffer
                 data_buffer[index1] = tl;
@@ -393,17 +401,12 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                 data_buffer[index3] = bl;
                 data_buffer[index4] = br;
 
-                nx = 2*x + ((step+i)%2);
-                ny = 2*y + ((step+i)%2);
-
+                // Update the data_buffer by 1 frame and update the tl tr bl br pointers
                 data_buffer = update(material_data, data_buffer, dirty, direction,nx,ny,chunk_size);
 
-                tl = data_buffer[index1];
-                tr = data_buffer[index2];
-                bl = data_buffer[index3];
-                br = data_buffer[index4];
             }
         }
+        i++;
     }
 
     return data_buffer;

@@ -290,12 +290,12 @@ int main(){
     while (!glfwWindowShouldClose(window)) {
         int parity = 1; //(random() & 1) == 0 ? -1 : 1;
         if (step % 3 == 0) {
-            spawn_material(data_buffer,dirty,110, 20, 'S',-10,10);
-            spawn_material(data_buffer,dirty,10, 20, 'I', 10,-15);
-            // spawn_material(data_buffer,dirty,WORLD_WIDTH - 3, 20, 'W');
-            // spawn_material(data_buffer,dirty,WORLD_WIDTH - 5, 25, 'W');
-            // spawn_material(data_buffer,dirty,WORLD_WIDTH - 7, 30, 'W');
-            // spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, 35, 's');
+            spawn_material(data_buffer,dirty,110, 110, 'S',0,0);
+            spawn_material(data_buffer,dirty,10, 50, 'I', 30,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 3, 20, 'W',-7,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 5, 25, 'W',-5,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 7, 30, 'W',-3,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, 35, 's');
         }
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
@@ -314,7 +314,7 @@ int main(){
         // Sleep n microseconds
         // Use the custom sleep method that picks 
         // windows / linux's sleep function
-        u_sleep(50000);
+        u_sleep(3000);
 
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.

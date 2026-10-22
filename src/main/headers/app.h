@@ -33,12 +33,19 @@ inline void u_sleep(long micros) {
 #include <string>
 
 
-
-const int STALE_TIME = 10;
+/**
+ * The amount of ticks it takes for a pixel to be marked as "stale". This means it will be skipped in future updates
+ * until nearby pixels are swapped.
+ * 3 seems sufficient
+ */
+const int STALE_TIME = 8;
+/**
+ * The width in pixels of the game world
+ */
 const int WORLD_WIDTH = 512;
+/**
+ * The height in pixels of the game world
+ */
 const int WORLD_HEIGHT = 512;
-const double PIXEL_SCALE = 1;
-const int CELL_WIDTH = 2;
-const int CELL_HEIGHT = 2;
 
 #endif
