@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <bitset>
 #include <map>
+#include <chrono>
+#include <thread>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include "app.h"
@@ -278,12 +280,8 @@ int main(){
 
     int NUM_UPDATES = 1;
 
-    // Source - https://stackoverflow.com/a/686373␍
-    // Posted by John Dibling, modified by community. See post 'Timeline' for change history␍
-    // Retrieved 2026-10-22, License - CC BY-SA 3.0
-    //
     srand (static_cast <unsigned> (time(0)));
-
+    
     for (int i = 0; i < WORLD_WIDTH; i++) {
         spawn_material(data_buffer,dirty,i, 0, 'R');
         spawn_material(data_buffer,dirty,i,WORLD_HEIGHT-1, 'R');
@@ -293,7 +291,16 @@ int main(){
         spawn_material(data_buffer,dirty,WORLD_WIDTH-1, i, 'R');
     }
 
+    
+    // const auto FRAME_DURATION = duration<double>(1.0 / TARGET_FPS);
+    const std::chrono::steady_clock::duration FRAME_DURATION = 
+        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<double>(1.0 / TARGET_FPS)
+        );
+    std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
+
     while (!glfwWindowShouldClose(window)) {
+        frame_start = std::chrono::steady_clock::now();
         int parity = (rand() & 1) == 0 ? -1 : 1;
         // if (step % 3 == 0) {
             spawn_material(data_buffer,dirty,110, 210, 'W',10,-5);
@@ -320,10 +327,6 @@ int main(){
         glfwPollEvents();
         input(window,&player_x,&player_y,1.0f);
 
-        // Sleep n microseconds
-        // Use the custom sleep method that picks 
-        // windows / linux's sleep function
-        u_sleep(3000);
 
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
@@ -336,6 +339,19 @@ int main(){
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 
                 GL_RED, GL_UNSIGNED_BYTE, render_buffer);
         glBindTexture(GL_TEXTURE_2D, 0);
+
+
+        auto frame_end = std::chrono::steady_clock::now();
+        auto elapsed = frame_end - frame_start;
+
+        if (elapsed < FRAME_DURATION) {
+            auto sleep_time = FRAME_DURATION - elapsed;
+            // std::cout << sleep_time.count() << std::endl;
+            // Sleep n microseconds
+            // Use the custom sleep method that picks 
+            // windows / linux's sleep function
+            u_sleep(sleep_time.count() / 1000);
+    }
     }
     // =============== Cleanup =================================
 

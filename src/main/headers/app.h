@@ -51,4 +51,8 @@ const int WORLD_HEIGHT = 512;
  *  The maximum number of updates in a single tick
  */
 const int MAX_UPDATES = 32;
+/**
+ *  Update loop will sleep after each update to ensure it doesn't exceed target FPS
+ */
+const int TARGET_FPS = 60;
 #endif
