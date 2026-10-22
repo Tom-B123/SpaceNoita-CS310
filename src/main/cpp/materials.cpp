@@ -85,10 +85,11 @@ int load_materials(float* colours,Material* material_data) {
         int g = hex2(colour,3);
         int b = hex2(colour,5);
 
-        if (material < 8) {
-            r = 256 - material * 16;
-            g = 256 - material * 16;
-            b = 256 - material * 16;
+        // 1st 32 materials = debugging colours, since " " is the 1st reasonable cell name.
+        if (material < 32) {
+            r = 256 - material * 8;
+            g = material * 8;
+            b = 50;
         }
 
         if (r < 0 || g < 0 || b < 0) { continue; }

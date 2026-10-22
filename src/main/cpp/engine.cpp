@@ -5,7 +5,7 @@
 #include <cmath>
 #include <vector>
 
-const int STALE_TIME = 8;
+const int STALE_TIME = 31;
 
 void swap_cells(DataPoint* data_buffer, char* dirty, int indexA, int indexB) {
     DataPoint tmp = data_buffer[indexA];
@@ -351,24 +351,21 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
             // Get the highest momentum and get the right direction from this.
             int dominant = largest_of_four(momentum_tl, momentum_tr, momentum_bl, momentum_br);
 
+            // Pick a direction based on which if the 4 cells has the most "momentum" (velocity * mass)
             switch (dominant) {
-                // Recursive case: pick a direction
                 case 0: // TL
                     direction = next_direction(&tl);
-                    // if (x==0 && y==0) { std::cout << tl.y_vel << "\n"; }
                     break;
                 case 1: // TR
                     direction = next_direction(&tr);
-                    // if (x==0 && y==0) { std::cout << tr.y_vel << "\n"; }
                     break;
                 case 2: // BL
                     direction = next_direction(&bl);
-                    // if (x==0 && y==0) { std::cout << bl.y_vel << "\n"; }
                     break;
                 case 3: // BR
                     direction = next_direction(&br);
-                    // if (x==0 && y==0) { std::cout << br.y_vel << "\n"; }
                     break;
+                // If we have 0 velocity, we don't need to update
                 default:
                     continue;
             }
@@ -384,7 +381,6 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
             ny = 2*y + (step%2);
 
             data_buffer = update(material_data, data_buffer, dirty, direction,nx,ny,chunk_size);
-
 
             tl = data_buffer[index1];
             tr = data_buffer[index2];

@@ -267,7 +267,7 @@ int main(){
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             render_buffer[y * WORLD_WIDTH + x] = ' ';
-            dirty[y * WORLD_WIDTH + x] = 8;
+            dirty[y * WORLD_WIDTH + x] = 31;
             data_buffer[y * WORLD_WIDTH + x].material = ' ';
         }
     }
