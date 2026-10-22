@@ -288,15 +288,18 @@ int main(){
     }
 
     while (!glfwWindowShouldClose(window)) {
-        int parity = 1; //(random() & 1) == 0 ? -1 : 1;
-        if (step % 3 == 0) {
-            spawn_material(data_buffer,dirty,110, 110, 'S',0,0);
+        int parity = (rand() & 1) == 0 ? -1 : 1;
+        // if (step % 3 == 0) {
+            spawn_material(data_buffer,dirty,110, 110, 'S',20,-40);
             spawn_material(data_buffer,dirty,10, 50, 'I', 30,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 3, 20, 'W',-7,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 5, 25, 'W',-5,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 7, 30, 'W',-3,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, 35, 's');
-        }
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 10, 20, 'S',-50,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 25, 'W',-30,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 26, 'W',-30,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 27, 'W',-30,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 28, 'W',-30,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH - 30, 30, 'S',-10,0);
+            spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 's');
+        // }
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
 

@@ -96,9 +96,9 @@ void update_forces(DataPoint* data) {
     data->frame_x_vel = 0;
     data->frame_y_vel = 0;
     // apply friction to x_velocity
-    data->x_vel = data->x_vel * 0.9;
+    data->x_vel = data->x_vel * 0.8;
     // apply friction + gravity to y_velocity. Should reach natuaral terminal velocity asp
-    data->y_vel = 0.2 + data->y_vel * 0.9;
+    data->y_vel = 1 + data->y_vel * 0.8;
 }
 
 /**
@@ -126,12 +126,12 @@ int next_direction(DataPoint* data) {
         if (data->frame_x_vel < data->x_vel) data->frame_x_vel = data->x_vel;
         return 1;
     }
-    if (y_vel > 1) {
+    if (y_vel > -1) {
         data->frame_y_vel++;
         if (data->frame_y_vel > data->y_vel) data->frame_y_vel = data->y_vel;
         return 0;
     }
-    if (y_vel < -1) {
+    if (y_vel < 1) {
         data->frame_y_vel--;
         if (data->frame_y_vel < data->y_vel) data->frame_y_vel = data->y_vel;
         return 2;
