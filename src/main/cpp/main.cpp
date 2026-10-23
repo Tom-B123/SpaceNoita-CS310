@@ -99,18 +99,35 @@ void input(GLFWwindow* window, float* player_x, float* player_y, float dt) {
     }
 }
 
+/**
+ *  Stores the data for rendering one quad. 
+ *  Should use a texture that is updated using the falling sand logic
+ */
+struct BodyInstance {
+    float x_pos; float y_pos;
+    float x_scale; float y_scale;
+    float angle; 
+    float r; float g; float b;
+};
+
 int main(){
     std::cout << "entered!" << std::endl;
     GLFWwindow* window;
     std::string vertexShaderSource;
     std::string fragmentShaderSource;
 
+    // Stores pixel data to be rendered to the texture.
     GLuint pixel_vbo;
     GLuint texture;
     GLuint vao;
     GLuint vertex_vbo;
+    // Stores the quad vertices that we will render textures to.
+    GLuint instance_vbo;
     GLuint shader_program;
 
+    // Number of rigidbodies in the simulation
+    const int MAX_OBJECTS = 64;
+    int object_count = 0;
 
     float player_x = 0;
     float player_y = 0;
@@ -165,16 +182,12 @@ int main(){
     }
     load_materials(colours,material_data);
 
-    // for (int material_code = 0; material_code < 256; material_code++) {
-    //     Material material = material_data[material_code];
-    // }
-
-    // Create a VBO to hold our pixel data (for PBO async transfer - optional)
+    // Create a VBO to hold our pixel data 
     glGenBuffers(1, &pixel_vbo);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixel_vbo);
     glBufferData(GL_PIXEL_UNPACK_BUFFER, WORLD_WIDTH * WORLD_HEIGHT * sizeof(char), 
             NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);  // Unbind for now
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     // Create a texture to display
     glGenTextures(1, &texture);
@@ -185,6 +198,8 @@ int main(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+
+    // Generate the shader program
     vertexShaderSource = get_shader_src("vertex.vert");
     fragmentShaderSource = get_shader_src("fragment.frag");
 
@@ -224,30 +239,77 @@ int main(){
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    // Magenta = undefined material colour
     glUseProgram(shader_program);
 
     // Sends the material - colour data from materials.json to the shader
-    GLint coloursLoc = glGetUniformLocation(shader_program, "colours");
-    if (coloursLoc == -1) {
+    GLint colours_loc = glGetUniformLocation(shader_program, "colours");
+    // Sends the world dimensions to the shader    
+    GLint world_size_loc = glGetUniformLocation(shader_program, "uWorldSize");
+    if (colours_loc == -1) {
         fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
     } else {
-        glUniform1fv(coloursLoc, 256 * 3, colours);
+        glUniform1fv(colours_loc, 256 * 3, colours);
     } 
-    float vertices[] = {
+    if (world_size_loc == -1) {
+        fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
+    }
+    float unit_quad[] = {
         // positions   // texture coords
-        -1.0f,  1.0f,  0.0f, 0.0f,  // top-left
-        -1.0f, -1.0f,  0.0f, 1.0f,  // bottom-left
-        1.0f, -1.0f,  1.0f, 1.0f,   // bottom-right
-        1.0f,  1.0f,  1.0f, 0.0f    // top-right
+        -0.5f,  0.5f,  0.0f, 0.0f,  // top-left
+        -0.5f, -0.5f,  0.0f, 1.0f,  // bottom-left
+         0.5f, -0.5f,  1.0f, 1.0f,   // bottom-right
+         0.5f,  0.5f,  1.0f, 0.0f    // top-right
     };
 
-    // Create VAO and VBO for the quad
-    glGenVertexArrays(1, &vao);
+    // Create the vector holding all the objects
+    std::vector<BodyInstance> objects = std::vector<BodyInstance>(MAX_OBJECTS);
+
     glGenBuffers(1, &vertex_vbo);
-    glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(unit_quad), unit_quad, GL_STATIC_DRAW);
+
+    // Create VAO and VBO for the objects
+    glGenBuffers(1, &instance_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(BodyInstance) * MAX_OBJECTS, nullptr, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // --- per-vertex: the unit quad ---
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(unit_quad), unit_quad, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)(2*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // --- per-instance: the instance buffer ---
+    glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
+    const GLsizei stride = sizeof(BodyInstance);
+
+    // Add x,y
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BodyInstance, x_pos));
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+
+    // Add sx,sy
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BodyInstance, x_scale));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+
+    // Add rotation
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BodyInstance, angle));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
+
+    // Add rgb colour
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BodyInstance, r));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
+
+    glBindVertexArray(0);
 
     // Position attribute
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
@@ -283,48 +345,55 @@ int main(){
     int NUM_UPDATES = 1;
 
     srand (static_cast <unsigned> (time(0)));
-    
-    for (int i = 0; i < WORLD_WIDTH; i++) {
-        spawn_material(data_buffer,dirty,i, 0, 'R');
-        spawn_material(data_buffer,dirty,i,WORLD_HEIGHT-1, 'R');
-    }
-    for (int i = 0; i < WORLD_HEIGHT; i++) {
-        spawn_material(data_buffer,dirty,0, i, 'R');
-        spawn_material(data_buffer,dirty,WORLD_WIDTH-1, i, 'R');
-    }
 
-    
     // const auto FRAME_DURATION = duration<double>(1.0 / TARGET_FPS);
     const std::chrono::steady_clock::duration FRAME_DURATION = 
         std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-            std::chrono::duration<double>(1.0 / TARGET_FPS)
-        );
+                std::chrono::duration<double>(1.0 / TARGET_FPS)
+                );
     std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
-    
+
+
+
+
+    /** Box2d code **/
+
     b2WorldDef worldDef = b2DefaultWorldDef();
 
+    BodyInstance bi = {0};
+    bi.x_pos = 30.0; bi.y_pos = 30.0;
+    bi.angle = 0.0; bi.x_scale = 10.0; bi.y_scale = 10.0;
+    bi.r = 1.0; bi.g = 0.0, bi.b = 0.0;
+
+    objects[0] = bi;
+
+    object_count = 1;
+
     while (!glfwWindowShouldClose(window)) {
+
+        objects[0].angle += 0.1;
+
         frame_start = std::chrono::steady_clock::now();
-        int parity = (rand() & 1) == 0 ? -1 : 1;
-        // if (step % 3 == 0) {
-            spawn_material(data_buffer,dirty,110, 210, 'W',10,-5);
-            spawn_material(data_buffer,dirty,10, 50, 'I', 5,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 10, 20, 'S',-15,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 25, 'W',-10,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 26, 'W',-2,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 27, 'W',-2,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 20, 28, 'W',-2,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH - 30, 30, 'S',-10,0);
-            spawn_material(data_buffer,dirty,WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 's');
-        // }
+
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Enable the GL shader and draw the current frame data to the screen
+        // glUseProgram(shader_program);
+        // glBindTexture(GL_TEXTURE_2D, texture);
+        // glBindVertexArray(vao);
+        // glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+
+        glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, object_count * sizeof(BodyInstance), objects.data());
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
         glUseProgram(shader_program);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform2f(world_size_loc, WORLD_WIDTH, WORLD_HEIGHT);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, object_count);
+        glBindVertexArray(0);
 
         // Update the screen and check for user input
         glfwSwapBuffers(window);
@@ -355,7 +424,7 @@ int main(){
             // Use the custom sleep method that picks 
             // windows / linux's sleep function
             u_sleep(sleep_time.count() / 1000);
-    }
+        }
     }
     // =============== Cleanup =================================
 
