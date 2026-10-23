@@ -32,6 +32,8 @@ inline void u_sleep(long micros) {
 
 #include <string>
 
+// Get random float from range
+float rand_range(float start, float end);
 
 /**
  * The amount of ticks it takes for a pixel to be marked as "stale". This means it will be skipped in future updates
@@ -46,7 +48,7 @@ const int WORLD_WIDTH = 512;
 /**
  * The height in pixels of the game world
  */
-const int WORLD_HEIGHT = 512;
+const int WORLD_HEIGHT = WORLD_WIDTH * 0.5625;
 /**
  *  The maximum number of updates in a single tick
  */
@@ -55,4 +57,6 @@ const int MAX_UPDATES = 32;
  *  Update loop will sleep after each update to ensure it doesn't exceed target FPS
  */
 const int TARGET_FPS = 60;
+
+const int B2D_SUBSTEP_COUNT = 4;
 #endif

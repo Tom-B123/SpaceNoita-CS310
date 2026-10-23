@@ -20,7 +20,7 @@ void main() {
     vec2 world = instance_pos + rotated * (instance_scale);
 
     // world -> NDC (y flipped so +y is up on screen if you want)
-    vec2 ndc = (world / uWorldSize) * 2.0 - 1.0;
+    vec2 ndc = (world / uWorldSize) * 2.0;
     ndc.y = -ndc.y;
 
     gl_Position = vec4(ndc, 0.0, 1.0);

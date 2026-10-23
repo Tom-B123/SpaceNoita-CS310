@@ -1,3 +1,4 @@
+#include "box2d/math_functions.h"
 #include "materials.h"
 #include <algorithm>
 #include <bitset>
@@ -110,6 +111,78 @@ struct BodyInstance {
     float r; float g; float b;
 };
 
+struct RigidbodyObject {
+    BodyInstance data;
+    b2BodyId id;
+};
+
+// Number of rigidbodies in the simulation
+const int MAX_OBJECTS = 512;
+int object_count = 0;
+
+float rand_range(float start, float end) {
+    // Source - https://stackoverflow.com/a/686373
+    return start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(end-start)));
+}
+// Simulated rigidbody objects
+std::vector<RigidbodyObject> objects = std::vector<RigidbodyObject>(MAX_OBJECTS);
+// Object data to be drawn
+std::vector<BodyInstance> raw_objects = std::vector<BodyInstance>(MAX_OBJECTS);
+
+
+void add_body(RigidbodyObject bo) {
+    if (object_count >= MAX_OBJECTS) return; 
+    
+    objects[object_count] = bo;
+    raw_objects[object_count++] = bo.data;
+}
+
+void add_body(BodyInstance bi, b2BodyId id) {
+    RigidbodyObject bo = {bi,id};
+    add_body(bo);
+}
+
+void add_body(b2WorldId worldId, bool is_dynamic, float x_pos, float y_pos, float x_scale, float y_scale) {
+    b2BodyDef bodyDef = b2DefaultBodyDef();
+    if (is_dynamic) bodyDef.type = b2_dynamicBody;
+    bodyDef.position = (b2Pos){x_pos, y_pos};
+    b2BodyId bodyId = b2CreateBody(worldId, &bodyDef);
+
+    b2Polygon box = b2MakeBox(x_scale, y_scale);
+    b2ShapeDef shapeDef = b2DefaultShapeDef();
+    shapeDef.density = 1.0f;
+    shapeDef.material.friction = 0.3f;
+
+    b2CreatePolygonShape(bodyId, &shapeDef, &box);
+
+    BodyInstance bi = {x_pos,y_pos,2 * x_scale,2 * y_scale,0,rand_range(0,1),rand_range(0, 1),rand_range(0, 1)};
+    RigidbodyObject bo = {bi,bodyId};
+    add_body(bo);
+}
+b2WorldId box2d_init() {
+    b2WorldDef worldDef = b2DefaultWorldDef();
+    worldDef.gravity = (b2Vec2){0.0f, -10.0f};
+    b2WorldId worldId = b2CreateWorld(&worldDef);
+
+    add_body(worldId, false, 40.0f, 40.0f, 50.0f, 10.0f);
+    add_body(worldId, true, 40.0f, 60.0f, 5.0f, 5.0f);
+    add_body(worldId, true, 40.0f, 80.0f, 3.0f, 3.0f);
+    add_body(worldId, true, 40.0f, 100.0f, 1.0f, 1.0f);
+
+    // b2BodyDef groundBodyDef = b2DefaultBodyDef();
+    // groundBodyDef.position = (b2Pos){0.0f, -100.0f};
+    //
+    // b2BodyId groundId = b2CreateBody(worldId, &groundBodyDef);
+    // b2Polygon groundBox = b2MakeBox(50.0f, 10.0f);
+    //
+    // b2ShapeDef groundShapeDef = b2DefaultShapeDef();
+    // b2CreatePolygonShape(groundId, &groundShapeDef, &groundBox);
+    //
+    // add_body({0,100,50,10,0,1,1,0},groundId);
+
+    return worldId;
+}
+
 int main(){
     std::cout << "entered!" << std::endl;
     GLFWwindow* window;
@@ -125,9 +198,6 @@ int main(){
     GLuint instance_vbo;
     GLuint shader_program;
 
-    // Number of rigidbodies in the simulation
-    const int MAX_OBJECTS = 64;
-    int object_count = 0;
 
     float player_x = 0;
     float player_y = 0;
@@ -261,8 +331,6 @@ int main(){
          0.5f,  0.5f,  1.0f, 0.0f    // top-right
     };
 
-    // Create the vector holding all the objects
-    std::vector<BodyInstance> objects = std::vector<BodyInstance>(MAX_OBJECTS);
 
     glGenBuffers(1, &vertex_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo);
@@ -353,25 +421,25 @@ int main(){
                 );
     std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
 
-
-
-
-    /** Box2d code **/
-
-    b2WorldDef worldDef = b2DefaultWorldDef();
-
-    BodyInstance bi = {0};
-    bi.x_pos = 30.0; bi.y_pos = 30.0;
-    bi.angle = 0.0; bi.x_scale = 10.0; bi.y_scale = 10.0;
-    bi.r = 1.0; bi.g = 0.0, bi.b = 0.0;
-
-    objects[0] = bi;
-
-    object_count = 1;
+    auto worldId = box2d_init();
 
     while (!glfwWindowShouldClose(window)) {
 
-        objects[0].angle += 0.1;
+        if (step % 10 == 0) add_body(worldId, true, 40.0f, 100.0f, 1.0f, 1.0f);
+
+        b2World_Step(worldId, 1.0f / (float)TARGET_FPS, B2D_SUBSTEP_COUNT);
+
+        for (int i = 0; i < object_count; i++) {
+
+            b2Pos position = b2Body_GetPosition(objects[i].id);
+            b2Rot rotation = b2Body_GetRotation(objects[i].id);
+            objects[i].data.angle = b2Rot_GetAngle(rotation);
+            objects[i].data.x_pos = position.x;
+            objects[i].data.y_pos = -position.y;
+            raw_objects[i].angle = b2Rot_GetAngle(rotation);
+            raw_objects[i].x_pos = position.x;
+            raw_objects[i].y_pos = -position.y;
+        }
 
         frame_start = std::chrono::steady_clock::now();
 
@@ -386,7 +454,7 @@ int main(){
 
 
         glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, object_count * sizeof(BodyInstance), objects.data());
+        glBufferSubData(GL_ARRAY_BUFFER, 0, object_count * sizeof(BodyInstance), raw_objects.data());
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glUseProgram(shader_program);
@@ -399,8 +467,6 @@ int main(){
         glfwSwapBuffers(window);
         glfwPollEvents();
         input(window,&player_x,&player_y,1.0f);
-
-
 
         // Use the data_buffer to compute the next gamestate, and update what the render_buffer sees.
         render_buffer = update_step(render_buffer,data_buffer,dirty,step,NUM_UPDATES,player_x,player_y);
@@ -419,7 +485,6 @@ int main(){
 
         if (elapsed < FRAME_DURATION) {
             auto sleep_time = FRAME_DURATION - elapsed;
-            // std::cout << sleep_time.count() << std::endl;
             // Sleep n microseconds
             // Use the custom sleep method that picks 
             // windows / linux's sleep function
@@ -429,6 +494,8 @@ int main(){
     // =============== Cleanup =================================
 
     std::cout << "Cleanup" << std::endl;
+
+    b2DestroyWorld(worldId);
     // Clean up OpenGL resources
     glDeleteBuffers(1, &pixel_vbo);
     glDeleteBuffers(1, &vertex_vbo);

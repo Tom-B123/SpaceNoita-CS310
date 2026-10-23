@@ -43,13 +43,6 @@ void spawn_material(DataPoint* data_buffer, char* dirty, int x, int y, char mate
     spawn_material(data_buffer,dirty,x, y,material_id, 0,0);
 }
 
-// Get random float from range
-float rand_range(float start, float end) {
-    // Source - https://stackoverflow.com/a/686373
-    // Posted by John Dibling, modified by community. See post 'Timeline' for change history
-    // Retrieved 2026-10-22, License - CC BY-SA 3.0
-    return start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(end-start)));
-}
 
 // Return the index of the largest of four floats, using 3 conditionals
 int largest_of_four(float A, float B, float C, float D) {
