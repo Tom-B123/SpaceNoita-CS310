@@ -2,8 +2,10 @@
 #include "app.h"
 #include "box2d/box2d.h"
 #include "box2d/id.h"
+#include "box2d/math_functions.h"
 #include "materials.h"
 #include <GL/gl.h>
+#include <unordered_map>
 
 bool* is_stale = new bool[WORLD_WIDTH * WORLD_HEIGHT];
 int MAX_UPDATES2 = MAX_UPDATES * MAX_UPDATES;
@@ -126,66 +128,56 @@ void update_forces(DataPoint* data, b2BodyId body, float s_rotation, float c_rot
     data->y_vel *= FRICTION;
 }
 
+uint randint(int step, int x, int y) {
+    uint bit = 0;
+    for (int i = 0; i < 32; i++) {
+        bit = bit << 1;
+        bit |= ((step << 3) % 13)+1 >= (step + ((x * 31 + i + y * 37) << 5)) % 17;
+    }
+    return bit;
+}
 /**
  *  Choose the next direction for the next update, based on the dominant particle's velocity (one with highest velocity^2 * mass^2)
  *  This should happen as many times per frame as necessary until everything has a |frame_x_vel| >= |x_vel| vica versa
  *  @param data the dominat particle that is being updated.
  */
-int next_direction(DataPoint* data) {
-
-    // Naive approach is move x fully then y fully, a-la minecraft entity physics, may prove more reliable / intuitive to move diagonally a-la bresenhams, 
-    // depends on how noticable the artifacting is.
-
-    // Subtract the currently moved steps from the remaining velocity.
+int next_direction(DataPoint* data,int step) {
     float x_vel = data->x_vel - data->frame_x_vel;
     float y_vel = data->y_vel - data->frame_y_vel;
 
-    // Move in direction of velocity
-    if (x_vel > 0.1) {
-        data->frame_x_vel++;
-        // If we have exceeded the velocity, see if we should move anyway by randomly rolling and comparing to the difference in velocity
-        if (data->frame_x_vel > data->x_vel) {
-            data->frame_x_vel = data->x_vel;
-            if (rand_range(0,1) < data->frame_x_vel - data->x_vel) {
-                return -1;
+    // Select which direction has the most magnitude
+    int rotation_direction = largest_of_four(y_vel, -x_vel, -y_vel, x_vel);
+
+    int direction = (rotation_direction % 4);
+
+    switch (direction) {
+        case 0:
+            data->frame_y_vel++;
+            if (data->frame_y_vel > data->y_vel) {
+                data->frame_y_vel = data->y_vel;
             }
-        }
-        return 3;
-    }
-    if (x_vel < -0.1) {
-        data->frame_x_vel--;
-        if (data->frame_x_vel < data->x_vel) {
-            data->frame_x_vel = data->x_vel;
-            if (rand_range(0,1) < -data->frame_x_vel + data->x_vel) {
-                return -1;
+            break;
+        case 1:
+            data->frame_x_vel--;
+            if (data->frame_x_vel < data->x_vel) {
+                data->frame_x_vel = data->x_vel;
             }
-        }
-        return 1;
-    }
-    if (y_vel > 0.1) {
-        data->frame_y_vel++;
-        if (data->frame_y_vel > data->y_vel) {
-            data->frame_y_vel = data->y_vel;
-            if (rand_range(0,1) < data->frame_y_vel - data->y_vel) {
-                return -1;
+            break;
+        case 2:
+            data->frame_y_vel--;
+            if (data->frame_y_vel < data->y_vel) {
+                data->frame_y_vel = data->y_vel;
             }
-        }
-        return 0;
-    }
-    if (y_vel < -0.1) {
-        data->frame_y_vel--;
-        data->frame_y_vel++;
-        if (data->frame_y_vel < data->y_vel) {
-            data->frame_y_vel = data->y_vel;
-            if (rand_range(0,1) < -data->frame_y_vel + data->y_vel) {
-                return -1;
+            break;
+        case 3:
+            data->frame_x_vel++;
+            if (data->frame_x_vel > data->x_vel) {
+                data->frame_x_vel = data->x_vel;
             }
-        }
-        return 2;
+            break;
     }
 
-    // Move nowhere
-    return -1;
+    return direction;
 }
 
 // The order in which top left, top right, bottom left and bottom right cells
@@ -320,6 +312,7 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
 }
 
 
+
 /**
  *  Computes the next value for the data_buffer, at the given cell position.
  *  Mimics the GPU code for a single thread
@@ -372,14 +365,14 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                         dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] >= STALE_TIME     // [ .]
                 ) {
                     // Occasionally we don't skip
-                    if (force_update > 0.9993) {
-                        dirty[ny * (chunk_size) + nx] = 0;
-                        dirty[ny * (chunk_size) + (nx+1) % chunk_size] = 0;
-                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] = 0;
-                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] = 0;
-                    }   else {
-                        continue;
-                    }
+                    // if (force_update > 0.9993) {
+                        // dirty[ny * (chunk_size) + nx] = 0;
+                        // dirty[ny * (chunk_size) + (nx+1) % chunk_size] = 0;
+                        // dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] = 0;
+                        // dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] = 0;
+                    // }   else {
+                        // continue;
+                    // }
                 }
 
                 int indicies[] = {
@@ -444,16 +437,16 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                 // Pick a direction based on which if the 4 cells has the most "momentum" (velocity * mass)
                 switch (dominant) {
                     case 0: // TL
-                        direction = next_direction(&tl);
+                        direction = next_direction(&tl,step);
                         break;
                     case 1: // TR
-                        direction = next_direction(&tr);
+                        direction = next_direction(&tr,step);
                         break;
                     case 2: // BL
-                        direction = next_direction(&bl);
+                        direction = next_direction(&bl,step);
                         break;
                     case 3: // BR
-                        direction = next_direction(&br);
+                        direction = next_direction(&br,step);
                         break;
                         // If we have 0 velocity, we don't need to update
                     default:
@@ -521,6 +514,12 @@ b2WorldId box2d_init() {
     b2WorldId worldId = b2CreateWorld(&worldDef);
 
     add_body(worldId, true, 30.0f, 0.0f, 100.0f, 100.0f);
+    b2Pos position = b2Body_GetPosition(objects[0].id);
+    b2Rot rotation = b2Body_GetRotation(objects[0].id);
+    // rotation in radians
+    float rotation_r = b2Rot_GetAngle(rotation);
+
+    // b2Body_SetTransform(objects[0].id, position,b2MakeRot(rotation_r + M_PI / 4));
     b2Body_SetAngularVelocity(objects[0].id, M_PI / 16);
 
     return worldId;

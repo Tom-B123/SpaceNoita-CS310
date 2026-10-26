@@ -44,7 +44,7 @@ float rand_range(float start, float end);
  * until nearby pixels are swapped.
  * 3 seems sufficient
  */
-const int STALE_TIME = 5;
+const int STALE_TIME = 32;
 /**
  * The width in pixels of the game world
  */
