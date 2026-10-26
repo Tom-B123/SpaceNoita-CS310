@@ -1,4 +1,3 @@
-#include "box2d/math_functions.h"
 #include "materials.h"
 #include <algorithm>
 #include <bitset>
@@ -9,7 +8,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include "app.h"
 
-#include "box2d/box2d.h"
 
 #include <cstdlib>
 
@@ -40,6 +38,8 @@ DataPoint* init_data_buffer(int w, int h) {
 char* update_step(char* render_buffer,DataPoint* data_buffer,char* dirty, long step,
                     int num_updates, float player_x, float player_y) {
 
+    spawn_material(data_buffer, dirty, WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'S');
+
     data_buffer = simple_margolus_update(material_data,data_buffer,dirty,step);
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
@@ -49,7 +49,7 @@ char* update_step(char* render_buffer,DataPoint* data_buffer,char* dirty, long s
         }
     }
 
-    render_buffer[((int)player_y % WORLD_HEIGHT)  * WORLD_WIDTH + ((int)player_x % WORLD_WIDTH)] = 'P';
+    // render_buffer[((int)player_y % WORLD_HEIGHT)  * WORLD_WIDTH + ((int)player_x % WORLD_WIDTH)] = 'P';
 
     return render_buffer;
 }
@@ -100,94 +100,59 @@ void input(GLFWwindow* window, float* player_x, float* player_y, float dt) {
     }
 }
 
-/**
- *  Stores the data for rendering one quad. 
- *  Should use a texture that is updated using the falling sand logic
- */
-struct BodyInstance {
-    float x_pos; float y_pos;
-    float x_scale; float y_scale;
-    float angle; 
-    float r; float g; float b;
-};
 
-struct RigidbodyObject {
-    BodyInstance data;
-    b2BodyId id;
-};
+GLuint load_shader(std::string vertex_name, std::string fragment_name) {
+    GLuint shader_program;
+    std::string vertexShaderSource;
+    std::string fragmentShaderSource;
 
-// Number of rigidbodies in the simulation
-const int MAX_OBJECTS = 512;
-int object_count = 0;
+    // Generate the shader program
+    vertexShaderSource = get_shader_src(vertex_name);
+    fragmentShaderSource = get_shader_src(fragment_name);
 
-float rand_range(float start, float end) {
-    // Source - https://stackoverflow.com/a/686373
-    return start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(end-start)));
-}
-// Simulated rigidbody objects
-std::vector<RigidbodyObject> objects = std::vector<RigidbodyObject>(MAX_OBJECTS);
-// Object data to be drawn
-std::vector<BodyInstance> raw_objects = std::vector<BodyInstance>(MAX_OBJECTS);
+    if (vertexShaderSource.empty() || vertexShaderSource.data() == nullptr) {
+        std::cout << "Failed to locate the vertex shader!";
+        return -1;
+    }
+    if (fragmentShaderSource.empty() || fragmentShaderSource.data() == nullptr){
+        std::cout << "Failed to locate the fragment shader!";
+        return -1;
+    }
 
-
-void add_body(RigidbodyObject bo) {
-    if (object_count >= MAX_OBJECTS) return; 
-    
-    objects[object_count] = bo;
-    raw_objects[object_count++] = bo.data;
-}
-
-void add_body(BodyInstance bi, b2BodyId id) {
-    RigidbodyObject bo = {bi,id};
-    add_body(bo);
-}
-
-void add_body(b2WorldId worldId, bool is_dynamic, float x_pos, float y_pos, float x_scale, float y_scale) {
-    b2BodyDef bodyDef = b2DefaultBodyDef();
-    if (is_dynamic) bodyDef.type = b2_dynamicBody;
-    bodyDef.position = (b2Pos){x_pos, y_pos};
-    b2BodyId bodyId = b2CreateBody(worldId, &bodyDef);
-
-    b2Polygon box = b2MakeBox(x_scale, y_scale);
-    b2ShapeDef shapeDef = b2DefaultShapeDef();
-    shapeDef.density = 1.0f;
-    shapeDef.material.friction = 0.3f;
-
-    b2CreatePolygonShape(bodyId, &shapeDef, &box);
-
-    BodyInstance bi = {x_pos,y_pos,2 * x_scale,2 * y_scale,0,rand_range(0,1),rand_range(0, 1),rand_range(0, 1)};
-    RigidbodyObject bo = {bi,bodyId};
-    add_body(bo);
-}
-b2WorldId box2d_init() {
-    b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = (b2Vec2){0.0f, -10.0f};
-    b2WorldId worldId = b2CreateWorld(&worldDef);
-
-    add_body(worldId, false, 40.0f, 40.0f, 50.0f, 10.0f);
-    add_body(worldId, true, 40.0f, 60.0f, 5.0f, 5.0f);
-    add_body(worldId, true, 40.0f, 80.0f, 3.0f, 3.0f);
-    add_body(worldId, true, 40.0f, 100.0f, 1.0f, 1.0f);
-
-    // b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    // groundBodyDef.position = (b2Pos){0.0f, -100.0f};
+    // Compile shaders with error checking
+    GLuint vertexShader = compile_shader(vertexShaderSource.c_str(), GL_VERTEX_SHADER);
+    GLuint fragmentShader = compile_shader(fragmentShaderSource.c_str(), GL_FRAGMENT_SHADER);
     //
-    // b2BodyId groundId = b2CreateBody(worldId, &groundBodyDef);
-    // b2Polygon groundBox = b2MakeBox(50.0f, 10.0f);
-    //
-    // b2ShapeDef groundShapeDef = b2DefaultShapeDef();
-    // b2CreatePolygonShape(groundId, &groundShapeDef, &groundBox);
-    //
-    // add_body({0,100,50,10,0,1,1,0},groundId);
+    if (!vertexShader || !fragmentShader) {
+        fprintf(stderr, "Shader compilation failed\n");
+        return -1;
+    }
 
-    return worldId;
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertexShader);
+    glAttachShader(shader_program, fragmentShader);
+    glLinkProgram(shader_program);
+
+    // Check linking
+    GLint success;
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[4096];
+        glGetProgramInfoLog(shader_program, 4096, NULL, infoLog);
+        fprintf(stderr, "Shader linking failed: %s\n", infoLog);
+        return -1;
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return shader_program;
 }
+
 
 int main(){
     std::cout << "entered!" << std::endl;
     GLFWwindow* window;
-    std::string vertexShaderSource;
-    std::string fragmentShaderSource;
 
     // Stores pixel data to be rendered to the texture.
     GLuint pixel_vbo;
@@ -196,7 +161,6 @@ int main(){
     GLuint vertex_vbo;
     // Stores the quad vertices that we will render textures to.
     GLuint instance_vbo;
-    GLuint shader_program;
 
 
     float player_x = 0;
@@ -268,67 +232,28 @@ int main(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    GLuint instance_shader_program = load_shader("instance.vert", "instance.frag");
 
-    // Generate the shader program
-    vertexShaderSource = get_shader_src("vertex.vert");
-    fragmentShaderSource = get_shader_src("fragment.frag");
-
-    if (vertexShaderSource.empty() || vertexShaderSource.data() == nullptr) {
-        std::cout << "Failed to locate the vertex shader!";
-        return -1;
-    }
-    if (fragmentShaderSource.empty() || fragmentShaderSource.data() == nullptr){
-        std::cout << "Failed to locate the fragment shader!";
-        return -1;
-    }
-
-    // Compile shaders with error checking
-    GLuint vertexShader = compile_shader(vertexShaderSource.c_str(), GL_VERTEX_SHADER);
-    GLuint fragmentShader = compile_shader(fragmentShaderSource.c_str(), GL_FRAGMENT_SHADER);
-    //
-    if (!vertexShader || !fragmentShader) {
-        fprintf(stderr, "Shader compilation failed\n");
-        return -1;
-    }
-
-    shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertexShader);
-    glAttachShader(shader_program, fragmentShader);
-    glLinkProgram(shader_program);
-
-    // Check linking
-    GLint success;
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if (!success) {
-        char infoLog[4096];
-        glGetProgramInfoLog(shader_program, 4096, NULL, infoLog);
-        fprintf(stderr, "Shader linking failed: %s\n", infoLog);
-        return -1;
-    }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    glUseProgram(shader_program);
+    glUseProgram(instance_shader_program);
 
     // Sends the material - colour data from materials.json to the shader
-    GLint colours_loc = glGetUniformLocation(shader_program, "colours");
-    // Sends the world dimensions to the shader    
-    GLint world_size_loc = glGetUniformLocation(shader_program, "uWorldSize");
+    GLint colours_loc = glGetUniformLocation(instance_shader_program, "colours");
     if (colours_loc == -1) {
         fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
     } else {
         glUniform1fv(colours_loc, 256 * 3, colours);
     } 
+    // Sends the world dimensions to the shader    
+    GLint world_size_loc = glGetUniformLocation(instance_shader_program, "uWorldSize");
     if (world_size_loc == -1) {
-        fprintf(stderr, "Warning: 'colours' uniform not found in shader\n");
+        fprintf(stderr, "Warning: 'world_size' uniform not found in shader\n");
     }
     float unit_quad[] = {
         // positions   // texture coords
-        -0.5f,  0.5f,  0.0f, 0.0f,  // top-left
-        -0.5f, -0.5f,  0.0f, 1.0f,  // bottom-left
-         0.5f, -0.5f,  1.0f, 1.0f,   // bottom-right
-         0.5f,  0.5f,  1.0f, 0.0f    // top-right
+        -0.5f,  0.5f,  0.0f, 1.0f,  // top-left
+        -0.5f, -0.5f,  0.0f, 0.0f,  // bottom-left
+         0.5f, -0.5f,  1.0f, 0.0f,   // bottom-right
+         0.5f,  0.5f,  1.0f, 1.0f    // top-right
     };
 
 
@@ -404,6 +329,9 @@ int main(){
             // Defaults to displaying air, aka 32 ticks of dirty time.
             dirty[y * WORLD_WIDTH + x] = ' ';
             data_buffer[y * WORLD_WIDTH + x].material = ' ';
+            if (x == 0 || x == WORLD_WIDTH - 1 || y == 0 || y == WORLD_HEIGHT - 1) {
+                data_buffer[y * WORLD_WIDTH + x].material = 'R';
+            }
         }
     }
 
@@ -425,21 +353,7 @@ int main(){
 
     while (!glfwWindowShouldClose(window)) {
 
-        if (step % 10 == 0) add_body(worldId, true, 40.0f, 100.0f, 1.0f, 1.0f);
-
-        b2World_Step(worldId, 1.0f / (float)TARGET_FPS, B2D_SUBSTEP_COUNT);
-
-        for (int i = 0; i < object_count; i++) {
-
-            b2Pos position = b2Body_GetPosition(objects[i].id);
-            b2Rot rotation = b2Body_GetRotation(objects[i].id);
-            objects[i].data.angle = b2Rot_GetAngle(rotation);
-            objects[i].data.x_pos = position.x;
-            objects[i].data.y_pos = -position.y;
-            raw_objects[i].angle = b2Rot_GetAngle(rotation);
-            raw_objects[i].x_pos = position.x;
-            raw_objects[i].y_pos = -position.y;
-        }
+        box2d_update(worldId);
 
         frame_start = std::chrono::steady_clock::now();
 
@@ -448,19 +362,20 @@ int main(){
 
         // Enable the GL shader and draw the current frame data to the screen
         // glUseProgram(shader_program);
-        // glBindTexture(GL_TEXTURE_2D, texture);
         // glBindVertexArray(vao);
         // glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-
         glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, object_count * sizeof(BodyInstance), raw_objects.data());
+
+        box2d_bind();
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glUseProgram(shader_program);
+        glUseProgram(instance_shader_program);
         glUniform2f(world_size_loc, WORLD_WIDTH, WORLD_HEIGHT);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(vao);
-        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, object_count);
+        box2d_draw();
         glBindVertexArray(0);
 
         // Update the screen and check for user input
@@ -501,7 +416,7 @@ int main(){
     glDeleteBuffers(1, &vertex_vbo);
     glDeleteTextures(1, &texture);
     glDeleteVertexArrays(1, &vao);
-    glDeleteProgram(shader_program);
+    glDeleteProgram(instance_shader_program);
 
     // Destroy window
     if (window) {

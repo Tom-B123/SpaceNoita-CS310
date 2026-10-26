@@ -8,6 +8,7 @@ layout(location = 4) in float instance_angle;   // radians
 layout(location = 5) in vec3  instance_colour;
 
 uniform vec2 uWorldSize;
+uniform vec3 colours;
 
 out vec2 TexCoord;
 out vec3 Colour;

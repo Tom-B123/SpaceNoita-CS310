@@ -12,7 +12,11 @@
 #include <fstream>
 // #include <conio.h>
 #include <stdio.h>
+#include <cmath>
 #include"materials.h"
+
+#include "box2d/math_functions.h"
+#include "box2d/box2d.h"
 
 #ifdef WIN32
 #include <Windows.h>
@@ -58,5 +62,13 @@ const int MAX_UPDATES = 32;
  */
 const int TARGET_FPS = 60;
 
+/**
+ *  Number of substeps in rigidbody update loop
+ */
 const int B2D_SUBSTEP_COUNT = 4;
+
+/**
+ *  Cap on how many rigidbody objects can exist
+ */
+const int MAX_OBJECTS = 512;
 #endif

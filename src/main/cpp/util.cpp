@@ -60,12 +60,12 @@ GLuint compile_shader(const char* source, GLenum type) {
 
 
 // Get the state integer / enum from a string
-int state_from_string(std::string state_string) {
+SandState state_from_string(std::string state_string) {
         if (!state_string.compare("powder"))      { return POWDER; }
         else if (!state_string.compare("liquid")) { return LIQUID; }
         else if (!state_string.compare("gas"))    { return GAS; }
         else if (!state_string.compare("solid"))  { return SOLID; }
-        return -1;
+        return INVALID;
 }
 
 // Converts a #RRGGBB colour to a numerical value

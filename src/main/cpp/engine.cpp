@@ -1,13 +1,24 @@
 #include "engine.h"
 #include "app.h"
+#include "box2d/box2d.h"
+#include "box2d/id.h"
 #include "materials.h"
-#include <algorithm>
-#include <cmath>
-#include <vector>
-
+#include <GL/gl.h>
 
 bool* is_stale = new bool[WORLD_WIDTH * WORLD_HEIGHT];
 int MAX_UPDATES2 = MAX_UPDATES * MAX_UPDATES;
+
+int object_count = 0;
+
+float rand_range(float start, float end) {
+    // Source - https://stackoverflow.com/a/686373
+    return start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(end-start)));
+}
+
+// Simulated rigidbody objects
+std::vector<RigidbodyObject> objects = std::vector<RigidbodyObject>(MAX_OBJECTS);
+// Object data to be drawn
+std::vector<BodyInstance> raw_objects = std::vector<BodyInstance>(MAX_OBJECTS);
 
 void swap_cells(DataPoint* data_buffer, char* dirty, int indexA, int indexB) {
     DataPoint tmp = data_buffer[indexA];
@@ -22,7 +33,7 @@ void swap_cells(DataPoint* data_buffer, char* dirty, int x1, int y1, int x2, int
             dirty,
             (y1%WORLD_HEIGHT) * WORLD_WIDTH + (x1%WORLD_WIDTH), 
             (y2%WORLD_HEIGHT) * WORLD_WIDTH + (x2%WORLD_WIDTH)
-    );
+            );
 }
 
 // Spawns material, setting the initial velocity
@@ -88,18 +99,22 @@ int largest_of_four(float A, float B, float C, float D) {
     }
 }
 
+const float GRAVITY_MAGNITUDE = 1;
+const float FRICTION = 0.9;
 /**
  *  Apply friction and gravity to the particle's velocities.
  *  Reset the frame_velocity, i.e. how much the particle has moved this frame
  *  x_vel of 1 means move facing west by 1 update
  *  @param data the particle that is being updated.
  */
-void update_forces(DataPoint* data) {
+void update_forces(DataPoint* data, b2BodyId body, float s_rotation, float c_rotation) {
+
     data->frame_x_vel = 0;
     data->frame_y_vel = 0;
     
     // apply gravity
-    data->y_vel += 0.4;
+    data->x_vel += s_rotation;
+    data->y_vel += c_rotation;
     // clamp speed to MAX_UPDATES / frame
     float magnitude = data->x_vel * data->x_vel + data->y_vel * data->y_vel;
     if (magnitude > MAX_UPDATES2) {
@@ -107,8 +122,8 @@ void update_forces(DataPoint* data) {
         data->y_vel = data->y_vel * MAX_UPDATES / std::sqrt(magnitude);
     }
     // apply friction
-    data->x_vel *= 0.95; 
-    data->y_vel *= 0.95;
+    data->x_vel *= FRICTION;
+    data->y_vel *= FRICTION;
 }
 
 /**
@@ -131,9 +146,9 @@ int next_direction(DataPoint* data) {
         // If we have exceeded the velocity, see if we should move anyway by randomly rolling and comparing to the difference in velocity
         if (data->frame_x_vel > data->x_vel) {
             data->frame_x_vel = data->x_vel;
-            // if (rand_range(0,1) < data->frame_x_vel - data->x_vel) {
-            //     return -1;
-            // }
+            if (rand_range(0,1) < data->frame_x_vel - data->x_vel) {
+                return -1;
+            }
         }
         return 3;
     }
@@ -141,9 +156,9 @@ int next_direction(DataPoint* data) {
         data->frame_x_vel--;
         if (data->frame_x_vel < data->x_vel) {
             data->frame_x_vel = data->x_vel;
-            // if (rand_range(0,1) < -data->frame_x_vel + data->x_vel) {
-            //     return -1;
-            // }
+            if (rand_range(0,1) < -data->frame_x_vel + data->x_vel) {
+                return -1;
+            }
         }
         return 1;
     }
@@ -151,9 +166,9 @@ int next_direction(DataPoint* data) {
         data->frame_y_vel++;
         if (data->frame_y_vel > data->y_vel) {
             data->frame_y_vel = data->y_vel;
-            // if (rand_range(0,1) < data->frame_y_vel - data->y_vel) {
-            //     return -1;
-            // }
+            if (rand_range(0,1) < data->frame_y_vel - data->y_vel) {
+                return -1;
+            }
         }
         return 0;
     }
@@ -162,9 +177,9 @@ int next_direction(DataPoint* data) {
         data->frame_y_vel++;
         if (data->frame_y_vel < data->y_vel) {
             data->frame_y_vel = data->y_vel;
-            // if (rand_range(0,1) < -data->frame_y_vel + data->y_vel) {
-            //     return -1;
-            // }
+            if (rand_range(0,1) < -data->frame_y_vel + data->y_vel) {
+                return -1;
+            }
         }
         return 2;
     }
@@ -312,13 +327,22 @@ DataPoint* update(Material* material_data, DataPoint* data_buffer, char* dirty, 
  */
 DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffer, char* dirty, long step) {
 
+    b2Rot rotation = b2Body_GetRotation(objects[0].id);
+    // rotation in radians
+    float rotation_r = b2Rot_GetAngle(rotation);
+
+    float c_rotation = GRAVITY_MAGNITUDE * cos(rotation_r);
+    float s_rotation = GRAVITY_MAGNITUDE * sin(rotation_r);
+
     // Update the forces for all pixels. If the pixel is stale, don't bother
     for (int y = 0; y < WORLD_HEIGHT; y++) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
 
             if (is_stale[y * WORLD_WIDTH + x] && dirty[y * WORLD_WIDTH + x] < STALE_TIME) dirty[y * WORLD_WIDTH + x] ++;
-            if (dirty[y * (WORLD_WIDTH) + x] >= STALE_TIME) continue;
-            update_forces(&data_buffer[y * WORLD_WIDTH + x]);
+            update_forces(&data_buffer[y * WORLD_WIDTH + x],objects[0].id,s_rotation,c_rotation);
+            // if (dirty[y * (WORLD_WIDTH) + x] >= STALE_TIME) {
+            //     continue;
+            // }
         }
     }
 
@@ -330,18 +354,33 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
         for (int y = 0; y < WORLD_HEIGHT / 2; y++) {
             for (int x = 0; x < WORLD_WIDTH / 2; x++) {
 
+                float force_update = rand_range(0, 1);
                 int chunk_size = WORLD_WIDTH;
 
                 // Get the normalised x,y position for the top left corner
                 int nx = 2*x + ((step+i)%2);
                 int ny = 2*y + ((step+i)%2);
 
+                // This isn't really working, without a solid rock barrier we get corruption at the world edge
+                if (nx >= WORLD_WIDTH-1 || nx < 0 || ny >= WORLD_HEIGHT-1 || ny < 0) continue;
+
                 // If there are no dirty cells we can skip
-                if (dirty[ny * (chunk_size) + nx] >= STALE_TIME &&                                      // [' ]
+                if (
+                        dirty[ny * (chunk_size) + nx] >= STALE_TIME &&                                      // [' ]
                         dirty[ny * (chunk_size) + (nx+1) % chunk_size] >= STALE_TIME &&                     // [ ']
                         dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] >= STALE_TIME &&                   // [. ]
                         dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] >= STALE_TIME     // [ .]
-                ) continue;
+                ) {
+                    // Occasionally we don't skip
+                    if (force_update > 0.9993) {
+                        dirty[ny * (chunk_size) + nx] = 0;
+                        dirty[ny * (chunk_size) + (nx+1) % chunk_size] = 0;
+                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] = 0;
+                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] = 0;
+                    }   else {
+                        continue;
+                    }
+                }
 
                 int indicies[] = {
                     ny * (chunk_size) + nx,                                      // [' ]
@@ -372,7 +411,7 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                 int tr_density = material_data[tr.material].density;
                 int bl_density = material_data[bl.material].density;
                 int br_density = material_data[br.material].density;
-                
+
                 // Calculate the momentum for each cell (sqaured length of velocity * density)
                 // The highest momentum determines which direction this cell should update in.
                 // Should account for the frame distance travelled
@@ -399,7 +438,7 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
 
                 // std::cout << "Frame 1: |" << tl.x_vel << ":" << tl.frame_x_vel << "," << tl.y_vel << ":" << tl.frame_y_vel << " , " << tr.x_vel <<":" << tr.frame_x_vel << "," << tr.y_vel << ":" << tr.frame_y_vel << "|" << std::endl
                 //           << "Frame 1: |" << bl.x_vel << ":" << bl.frame_x_vel << "," << bl.y_vel << ":" << bl.frame_y_vel << " , " << br.x_vel <<":" << br.frame_x_vel << "," << tr.y_vel << ":" << tr.frame_y_vel << "|" << std::endl;
-                
+
                 resolved_velocity = false;
 
                 // Pick a direction based on which if the 4 cells has the most "momentum" (velocity * mass)
@@ -441,4 +480,70 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
     }
 
     return data_buffer;
+}
+
+
+
+
+void add_body(RigidbodyObject bo) {
+    if (object_count >= MAX_OBJECTS) return; 
+
+    objects[object_count] = bo;
+    raw_objects[object_count++] = bo.data;
+}
+
+void add_body(BodyInstance bi, b2BodyId id) {
+    RigidbodyObject bo = {bi,id};
+    add_body(bo);
+}
+
+void add_body(b2WorldId worldId, bool is_dynamic, float x_pos, float y_pos, float x_scale, float y_scale) {
+    b2BodyDef bodyDef = b2DefaultBodyDef();
+    if (is_dynamic) bodyDef.type = b2_dynamicBody;
+    bodyDef.position = (b2Pos){x_pos, y_pos};
+    b2BodyId bodyId = b2CreateBody(worldId, &bodyDef);
+
+    b2Polygon box = b2MakeBox(x_scale, y_scale);
+    b2ShapeDef shapeDef = b2DefaultShapeDef();
+    shapeDef.density = 1.0f;
+    shapeDef.material.friction = 0.3f;
+
+    b2CreatePolygonShape(bodyId, &shapeDef, &box);
+
+    BodyInstance bi = {x_pos,y_pos,2 * x_scale,2 * y_scale,0,rand_range(0,1),rand_range(0, 1),rand_range(0, 1)};
+    RigidbodyObject bo = {bi,bodyId};
+    add_body(bo);
+}
+
+b2WorldId box2d_init() {
+    b2WorldDef worldDef = b2DefaultWorldDef();
+    worldDef.gravity = (b2Vec2){0.0f, 0.0f};
+    b2WorldId worldId = b2CreateWorld(&worldDef);
+
+    add_body(worldId, true, 30.0f, 0.0f, 100.0f, 100.0f);
+    b2Body_SetAngularVelocity(objects[0].id, M_PI / 16);
+
+    return worldId;
+}
+
+void box2d_update(b2WorldId worldId) {
+    b2World_Step(worldId, 1.0f / (float)TARGET_FPS, B2D_SUBSTEP_COUNT);
+    for (int i = 0; i < object_count; i++) {
+        b2Pos position = b2Body_GetPosition(objects[i].id);
+        b2Rot rotation = b2Body_GetRotation(objects[i].id);
+
+        objects[i].data.angle = b2Rot_GetAngle(rotation);
+        objects[i].data.x_pos = position.x;
+        objects[i].data.y_pos = -position.y;
+        raw_objects[i].angle = b2Rot_GetAngle(rotation);
+        raw_objects[i].x_pos = position.x;
+        raw_objects[i].y_pos = -position.y;
+    }
+}
+
+void box2d_bind() {
+    glBufferSubData(GL_ARRAY_BUFFER, 0, object_count * sizeof(BodyInstance), raw_objects.data());
+}
+void box2d_draw() {
+    glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, object_count);
 }
