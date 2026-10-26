@@ -5,6 +5,7 @@
 #include "box2d/math_functions.h"
 #include "materials.h"
 #include <GL/gl.h>
+#include <cmath>
 #include <unordered_map>
 
 bool* is_stale = new bool[WORLD_WIDTH * WORLD_HEIGHT];
@@ -145,10 +146,18 @@ int next_direction(DataPoint* data,int step) {
     float x_vel = data->x_vel - data->frame_x_vel;
     float y_vel = data->y_vel - data->frame_y_vel;
 
+    // float rotation_angle = atan2(x_vel, y_vel);
     // Select which direction has the most magnitude
-    int rotation_direction = largest_of_four(y_vel, -x_vel, -y_vel, x_vel);
+    int rotation_direction = largest_of_four(y_vel, -x_vel, -y_vel, x_vel) % 4;
+    // int n_rotation_direction = (rotation_direction + 1) % 4;
+    
+    int direction = rotation_direction;
+    // // Generate a random angle between the two direction options.
+    // // If this is more than the angle, move in the next direction.
+    // // Else move in the current direction
+    // if (rand_range(rotation_direction * M_PI / 2, n_rotation_direction * M_PI / 2) > rotation_angle)
+    //     int direction = n_rotation_direction;
 
-    int direction = (rotation_direction % 4);
 
     switch (direction) {
         case 0:
@@ -365,14 +374,14 @@ DataPoint* simple_margolus_update(Material* material_data, DataPoint* data_buffe
                         dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] >= STALE_TIME     // [ .]
                 ) {
                     // Occasionally we don't skip
-                    // if (force_update > 0.9993) {
-                        // dirty[ny * (chunk_size) + nx] = 0;
-                        // dirty[ny * (chunk_size) + (nx+1) % chunk_size] = 0;
-                        // dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] = 0;
-                        // dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] = 0;
-                    // }   else {
-                        // continue;
-                    // }
+                    if (force_update > 0.9993) {
+                        dirty[ny * (chunk_size) + nx] = 0;
+                        dirty[ny * (chunk_size) + (nx+1) % chunk_size] = 0;
+                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + nx] = 0;
+                        dirty[(((ny+1)%chunk_size) * (chunk_size)) + (nx+1) % chunk_size] = 0;
+                    }   else {
+                        continue;
+                    }
                 }
 
                 int indicies[] = {
@@ -510,10 +519,11 @@ void add_body(b2WorldId worldId, bool is_dynamic, float x_pos, float y_pos, floa
 
 b2WorldId box2d_init() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = (b2Vec2){0.0f, 0.0f};
+    worldDef.gravity = (b2Vec2){0.0f, -10.0f};
     b2WorldId worldId = b2CreateWorld(&worldDef);
 
     add_body(worldId, true, 30.0f, 0.0f, 100.0f, 100.0f);
+    add_body(worldId, false, 30.0f, -150.0f, 500.0f, 30.0f);
     b2Pos position = b2Body_GetPosition(objects[0].id);
     b2Rot rotation = b2Body_GetRotation(objects[0].id);
     // rotation in radians
@@ -526,6 +536,7 @@ b2WorldId box2d_init() {
 }
 
 void box2d_update(b2WorldId worldId) {
+    b2Body_SetAngularVelocity(objects[0].id, M_PI / 16);
     b2World_Step(worldId, 1.0f / (float)TARGET_FPS, B2D_SUBSTEP_COUNT);
     for (int i = 0; i < object_count; i++) {
         b2Pos position = b2Body_GetPosition(objects[i].id);

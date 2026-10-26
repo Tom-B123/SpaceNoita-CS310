@@ -44,7 +44,7 @@ float rand_range(float start, float end);
  * until nearby pixels are swapped.
  * 3 seems sufficient
  */
-const int STALE_TIME = 32;
+const int STALE_TIME = 7;
 /**
  * The width in pixels of the game world
  */
@@ -56,11 +56,11 @@ const int WORLD_HEIGHT = WORLD_WIDTH * 0.5625;
 /**
  *  The maximum number of updates in a single tick
  */
-const int MAX_UPDATES = 32;
+const int MAX_UPDATES = 16;
 /**
  *  Update loop will sleep after each update to ensure it doesn't exceed target FPS
  */
-const int TARGET_FPS = 60;
+const int TARGET_FPS = 30;
 
 /**
  *  Number of substeps in rigidbody update loop
